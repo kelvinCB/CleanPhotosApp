@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,11 +20,18 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,8 +42,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.kelvincalcano.cleanphotos.domain.AlbumSortOrder
 import com.kelvincalcano.cleanphotos.domain.PhotoAlbum
 import com.kelvincalcano.cleanphotos.domain.formatBytes
+import com.kelvincalcano.cleanphotos.domain.sortAlbums
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -45,6 +55,10 @@ fun AlbumSelectionScreen(
     onAlbumSelected: (PhotoAlbum) -> Unit,
 ) {
     val resolver = LocalContext.current.contentResolver
+    var sortOrderName by rememberSaveable { mutableStateOf(AlbumSortOrder.NAME_ASC.name) }
+    var isSortMenuExpanded by remember { mutableStateOf(false) }
+    val sortOrder = AlbumSortOrder.valueOf(sortOrderName)
+    val sortedAlbums = remember(albums, sortOrder) { sortAlbums(albums, sortOrder) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -55,13 +69,46 @@ fun AlbumSelectionScreen(
         if (albums.isEmpty()) {
             Text("No se encontraron álbumes con fotos.")
         } else {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Ordenar álbumes", style = MaterialTheme.typography.titleSmall)
+                Spacer(Modifier.weight(1f))
+                Box {
+                    OutlinedButton(
+                        onClick = { isSortMenuExpanded = true },
+                        modifier = Modifier.semantics {
+                            contentDescription = "Orden actual: ${sortOrder.label}"
+                        },
+                    ) {
+                        Text(sortOrder.label)
+                    }
+                    DropdownMenu(
+                        expanded = isSortMenuExpanded,
+                        onDismissRequest = { isSortMenuExpanded = false },
+                    ) {
+                        AlbumSortOrder.entries.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(option.label) },
+                                onClick = {
+                                    sortOrderName = option.name
+                                    isSortMenuExpanded = false
+                                },
+                            )
+                        }
+                    }
+                }
+            }
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                items(albums, key = PhotoAlbum::id) { album ->
+                items(sortedAlbums, key = PhotoAlbum::id) { album ->
                     AlbumRow(
                         album = album,
                         resolver = resolver,

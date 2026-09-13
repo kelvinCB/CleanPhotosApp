@@ -29,6 +29,7 @@ class PhotoRepository(private val resolver: ContentResolver) {
             val bucketIdIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.BUCKET_ID)
             val bucketNameIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.BUCKET_DISPLAY_NAME)
             val sizeIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.SIZE)
+            val dateAddedIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED)
             while (cursor.moveToNext()) {
                 val bucketId = cursor.getString(bucketIdIndex).orEmpty()
                 val bucketName = cursor.getString(bucketNameIndex).orEmpty()
@@ -41,6 +42,10 @@ class PhotoRepository(private val resolver: ContentResolver) {
                 }
                 accumulator.photoCount++
                 accumulator.totalBytes += cursor.getLong(sizeIndex).coerceAtLeast(0L)
+                accumulator.latestPhotoDateAdded = maxOf(
+                    accumulator.latestPhotoDateAdded,
+                    cursor.getLong(dateAddedIndex),
+                )
             }
         }
 
@@ -49,6 +54,7 @@ class PhotoRepository(private val resolver: ContentResolver) {
             photoCount = albums.values.sumOf(AlbumAccumulator::photoCount),
             totalBytes = albums.values.sumOf(AlbumAccumulator::totalBytes),
             coverUri = albums.values.first().coverUri,
+            latestPhotoDateAdded = albums.values.maxOf(AlbumAccumulator::latestPhotoDateAdded),
         )
         buildList {
             add(allPhotos)
@@ -62,6 +68,7 @@ class PhotoRepository(private val resolver: ContentResolver) {
                             coverUri = accumulator.coverUri,
                             photoCount = accumulator.photoCount,
                             totalBytes = accumulator.totalBytes,
+                            latestPhotoDateAdded = accumulator.latestPhotoDateAdded,
                         )
                     }
                     .sortedBy { it.name.lowercase() },
@@ -138,6 +145,7 @@ class PhotoRepository(private val resolver: ContentResolver) {
             MediaStore.Images.Media.BUCKET_ID,
             MediaStore.Images.Media.BUCKET_DISPLAY_NAME,
             MediaStore.Images.Media.SIZE,
+            MediaStore.Images.Media.DATE_ADDED,
         )
 
         fun mapAlbumRow(
@@ -146,12 +154,14 @@ class PhotoRepository(private val resolver: ContentResolver) {
             coverUri: String?,
             photoCount: Int,
             totalBytes: Long,
+            latestPhotoDateAdded: Long = 0L,
         ) = PhotoAlbum(
             id = bucketId,
             name = bucketName.orEmpty().ifBlank { "Sin álbum" },
             coverUri = coverUri,
             photoCount = photoCount,
             totalBytes = totalBytes.coerceAtLeast(0L),
+            latestPhotoDateAdded = latestPhotoDateAdded,
         )
 
         fun mapRow(id: Long?, displayName: String?, sizeBytes: Long?, uri: String?): Photo? {
@@ -171,5 +181,6 @@ class PhotoRepository(private val resolver: ContentResolver) {
         val coverUri: String,
         var photoCount: Int = 0,
         var totalBytes: Long = 0L,
+        var latestPhotoDateAdded: Long = 0L,
     )
 }

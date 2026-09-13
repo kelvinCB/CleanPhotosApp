@@ -1,7 +1,10 @@
 package com.kelvincalcano.cleanphotos.ui
 
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kelvincalcano.cleanphotos.domain.PhotoAlbum
@@ -43,5 +46,37 @@ class AlbumSelectionScreenTest {
 
         composeRule.onNodeWithContentDescription("Álbum Todas las fotos").performClick()
         assertEquals("Todas las fotos", selected?.name)
+    }
+
+    @Test
+    fun sortMenu_exposesTheSixAlbumOrders() {
+        composeRule.setContent {
+            AlbumSelectionScreen(
+                albums = listOf(
+                    PhotoAlbum.allPhotos(photoCount = 3, totalBytes = 3_000L),
+                    PhotoAlbum("camera", "Camera", null, 2, 2_000L),
+                ),
+                onAlbumSelected = {},
+            )
+        }
+
+        composeRule
+            .onNodeWithContentDescription("Orden actual: Nombre: A a Z")
+            .performClick()
+
+        composeRule.onNodeWithText("Tamaño: mayor a menor").assertIsDisplayed()
+        composeRule.onNodeWithText("Tamaño: menor a mayor").assertIsDisplayed()
+        assertEquals(
+            2,
+            composeRule.onAllNodesWithText("Nombre: A a Z").fetchSemanticsNodes().size,
+        )
+        composeRule.onNodeWithText("Nombre: Z a A").assertIsDisplayed()
+        composeRule.onNodeWithText("Foto más reciente primero").assertIsDisplayed()
+        composeRule.onNodeWithText("Foto más antigua primero").assertIsDisplayed()
+
+        composeRule.onNodeWithText("Tamaño: mayor a menor").performClick()
+        composeRule
+            .onNodeWithContentDescription("Orden actual: Tamaño: mayor a menor")
+            .assertIsDisplayed()
     }
 }

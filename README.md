@@ -15,6 +15,7 @@ Aplicación Android local para revisar imágenes en tarjetas, conservarlas con s
 - Incluye cámara, capturas de pantalla, WhatsApp y formatos de imagen que Android indexe.
 - Primero muestra los álbumes detectados, con portada, cantidad y tamaño; permite elegir, por ejemplo, `Screenshots`, `WhatsApp`, `Camera` o `Todas las fotos`.
 - La selección de álbumes se presenta en una cuadrícula ligera de dos columnas y comienza siempre con `Todas las fotos`.
+- Permite ordenar los álbumes por tamaño, nombre o fecha de la foto más reciente, en ambos sentidos; `Todas las fotos` permanece siempre primero.
 - Trabaja en lotes de 300 dentro del álbum elegido y no copia las fotos fuera del dispositivo.
 - Al terminar un lote, permite cargar 300 fotos más o elegir otro álbum, incluso si el álbum actual tenía menos de 300 fotos.
 - Si un álbum conserva fotos en la galería, pero todas ya fueron marcadas como conservadas, muestra “Álbum completado” con el total y permite elegir otro álbum.
