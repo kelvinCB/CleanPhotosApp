@@ -20,7 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import com.kelvincalcano.cleanphotos.data.PhotoRepository
-import com.kelvincalcano.cleanphotos.domain.ReviewSession
+import com.kelvincalcano.cleanphotos.domain.ReviewStateHolder
 import com.kelvincalcano.cleanphotos.ui.LoadingState
 import com.kelvincalcano.cleanphotos.ui.PermissionScreen
 import com.kelvincalcano.cleanphotos.ui.ReviewScreen
@@ -28,7 +28,8 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private lateinit var repository: PhotoRepository
-    private val session = ReviewSession()
+    private val reviewState = ReviewStateHolder()
+    private var reviewSnapshot by mutableStateOf(reviewState.state)
     private var hasFullAccess by mutableStateOf(false)
     private var hasPartialAccess by mutableStateOf(false)
     private var isLoading by mutableStateOf(false)
@@ -47,10 +48,12 @@ class MainActivity : ComponentActivity() {
     ) { result ->
         val photoId = pendingTrashId ?: return@registerForActivityResult
         if (result.resultCode == Activity.RESULT_OK) {
-            session.confirmTrash(photoId)
+            reviewState.confirmTrash(photoId)
+            reviewSnapshot = reviewState.state
             feedback = "Enviada a papelera"
         } else {
-            session.cancelTrash(photoId)
+            reviewState.cancelTrash(photoId)
+            reviewSnapshot = reviewState.state
             feedback = "No se movió la foto a la papelera"
         }
         pendingTrashId = null
@@ -72,7 +75,7 @@ class MainActivity : ComponentActivity() {
                     )
                     isLoading -> LoadingState()
                     else -> ReviewScreen(
-                        state = session.snapshot(),
+                        state = reviewSnapshot,
                         onKeep = ::keepCurrent,
                         onTrash = ::trashCurrent,
                         onLoadMore = ::loadMore,
@@ -112,25 +115,33 @@ class MainActivity : ComponentActivity() {
     private fun loadPhotos() {
         isLoading = true
         lifecycleScope.launch {
-            session.load(repository.loadPhotos())
+            reviewState.load(repository.loadPhotos())
+            reviewSnapshot = reviewState.state
             isLoading = false
             feedback = null
         }
     }
 
     private fun keepCurrent() {
-        if (session.keepCurrent()) feedback = "Conservada"
+        if (reviewState.keepCurrent()) {
+            reviewSnapshot = reviewState.state
+            feedback = "Conservada"
+        }
     }
 
     private fun trashCurrent() {
-        val photo = session.requestTrashCurrent() ?: return
+        val photo = reviewState.requestTrashCurrent() ?: return
+        reviewSnapshot = reviewState.state
         pendingTrashId = photo.id
         feedback = "Confirma en Android para moverla a papelera"
         trashLauncher.launch(IntentSenderRequest.Builder(repository.createTrashRequest(photo)).build())
     }
 
     private fun loadMore() {
-        if (session.loadNextBatch()) feedback = null
+        if (reviewState.loadNextBatch()) {
+            reviewSnapshot = reviewState.state
+            feedback = null
+        }
     }
 
     private fun openAppSettings() {
