@@ -20,12 +20,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
+import com.kelvincalcano.cleanphotos.domain.PhotoAlbum
 import com.kelvincalcano.cleanphotos.domain.BatchWritePromptController
 import com.kelvincalcano.cleanphotos.data.PhotoRepository
 import com.kelvincalcano.cleanphotos.domain.BatchWriteAccessRegistry
 import com.kelvincalcano.cleanphotos.domain.KeptPhotoStore
 import com.kelvincalcano.cleanphotos.domain.ReviewStateHolder
 import com.kelvincalcano.cleanphotos.ui.LoadingState
+import com.kelvincalcano.cleanphotos.ui.AlbumSelectionScreen
 import com.kelvincalcano.cleanphotos.ui.PermissionScreen
 import com.kelvincalcano.cleanphotos.ui.ReviewScreen
 import kotlinx.coroutines.launch
@@ -37,8 +39,11 @@ class MainActivity : ComponentActivity() {
     private val batchWriteAccess = BatchWriteAccessRegistry()
     private val batchWritePrompt = BatchWritePromptController()
     private var reviewSnapshot by mutableStateOf(reviewState.state)
+    private var albums by mutableStateOf<List<PhotoAlbum>>(emptyList())
+    private var selectedAlbum by mutableStateOf<PhotoAlbum?>(null)
     private var hasFullAccess by mutableStateOf(false)
     private var hasPartialAccess by mutableStateOf(false)
+    private var isLoadingAlbums by mutableStateOf(false)
     private var isLoading by mutableStateOf(false)
     private var feedback by mutableStateOf<String?>(null)
     private var pendingTrashId: Long? = null
@@ -50,7 +55,7 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission(),
     ) {
         refreshAccessState()
-        if (hasFullAccess) loadPhotos()
+        if (hasFullAccess) loadAlbums()
     }
 
     private val trashLauncher = registerForActivityResult(
@@ -95,7 +100,7 @@ class MainActivity : ComponentActivity() {
             keptPreferences.edit().putStringSet(KEPT_PHOTOS_KEY, keptUris).apply()
         }
         refreshAccessState()
-        if (hasFullAccess) loadPhotos()
+        if (hasFullAccess) loadAlbums()
         setContent {
             MaterialTheme {
                 when {
@@ -103,6 +108,11 @@ class MainActivity : ComponentActivity() {
                         partialAccess = hasPartialAccess,
                         onRequestPermission = ::requestPhotoPermission,
                         onOpenSettings = ::openAppSettings,
+                    )
+                    isLoadingAlbums -> LoadingState("Buscando álbumes…")
+                    selectedAlbum == null -> AlbumSelectionScreen(
+                        albums = albums,
+                        onAlbumSelected = ::selectAlbum,
                     )
                     isLoading -> LoadingState()
                     else -> ReviewScreen(
@@ -115,12 +125,14 @@ class MainActivity : ComponentActivity() {
                         showBatchWriteExplanation = showBatchWriteExplanation,
                         onBatchWriteExplanationAccepted = ::acknowledgeBatchWriteExplanation,
                         onBatchWriteExplanationDismissed = ::dismissBatchWriteExplanation,
+                        albumName = selectedAlbum?.name,
+                        onChangeAlbum = ::showAlbumSelection,
                     )
                 }
 
                 val batchKey = reviewState.currentBatch.firstOrNull()?.uri
-                LaunchedEffect(batchKey, isLoading, hasFullAccess) {
-                    if (!isLoading && hasFullAccess && batchKey != null) {
+                LaunchedEffect(batchKey, isLoading, hasFullAccess, selectedAlbum?.id) {
+                    if (!isLoading && hasFullAccess && selectedAlbum != null && batchKey != null) {
                         requestBatchWriteAccess()
                     }
                 }
@@ -133,7 +145,7 @@ class MainActivity : ComponentActivity() {
         if (::repository.isInitialized) {
             val wasFull = hasFullAccess
             refreshAccessState()
-            if (!wasFull && hasFullAccess) loadPhotos()
+            if (!wasFull && hasFullAccess) loadAlbums()
         }
     }
 
@@ -154,14 +166,33 @@ class MainActivity : ComponentActivity() {
         Manifest.permission.READ_EXTERNAL_STORAGE
     }
 
-    private fun loadPhotos() {
+    private fun loadAlbums() {
+        isLoadingAlbums = true
+        lifecycleScope.launch {
+            albums = repository.loadAlbums()
+            selectedAlbum = null
+            isLoadingAlbums = false
+        }
+    }
+
+    private fun selectAlbum(album: PhotoAlbum) {
+        selectedAlbum = album
+        loadPhotos(album)
+    }
+
+    private fun loadPhotos(album: PhotoAlbum) {
         isLoading = true
         lifecycleScope.launch {
-            reviewState.load(keptPhotoStore.filterUnreviewed(repository.loadPhotos()))
+            reviewState.load(keptPhotoStore.filterUnreviewed(repository.loadPhotos(album)))
             reviewSnapshot = reviewState.state
             isLoading = false
             feedback = null
         }
+    }
+
+    private fun showAlbumSelection() {
+        selectedAlbum = null
+        feedback = null
     }
 
     private fun keepCurrent() {

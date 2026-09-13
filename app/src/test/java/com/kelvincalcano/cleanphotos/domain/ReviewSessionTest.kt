@@ -64,6 +64,18 @@ class ReviewSessionTest {
     }
 
     @Test
+    fun `default batch contains 300 photos`() {
+        val session = ReviewSession()
+        session.load((1L..301L).map(::photo))
+
+        assertEquals(300, session.snapshot().batchTotal)
+        repeat(300) { assertTrue(session.keepCurrent()) }
+
+        assertTrue(session.isBatchComplete)
+        assertTrue(session.hasMorePhotos)
+    }
+
+    @Test
     fun `formatBytes uses readable binary units`() {
         assertEquals("0 B", formatBytes(0))
         assertEquals("1.5 KB", formatBytes(1_536))
@@ -73,4 +85,3 @@ class ReviewSessionTest {
     private fun photo(id: Long, sizeBytes: Long = 1_024) =
         Photo(id = id, uri = "content://media/external/images/media/$id", displayName = "photo-$id.jpg", sizeBytes = sizeBytes)
 }
-

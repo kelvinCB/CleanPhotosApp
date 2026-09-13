@@ -31,5 +31,21 @@ class PhotoRepositoryContractTest {
         assertNull(PhotoRepository.mapRow(null, "missing-id.jpg", 1L, "content://media/1"))
         assertNull(PhotoRepository.mapRow(1L, "missing-uri.jpg", 1L, null))
     }
-}
 
+    @Test
+    fun `repository maps album metadata`() {
+        val album = PhotoRepository.mapAlbumRow(
+            bucketId = "screenshots",
+            bucketName = "Screenshots",
+            coverUri = "content://media/external/images/media/42",
+            photoCount = 7,
+            totalBytes = 8_192L,
+        )
+
+        assertEquals("screenshots", album.id)
+        assertEquals("Screenshots", album.name)
+        assertEquals("content://media/external/images/media/42", album.coverUri)
+        assertEquals(7, album.photoCount)
+        assertEquals(8_192L, album.totalBytes)
+    }
+}

@@ -35,6 +35,8 @@ fun ReviewScreen(
     showBatchWriteExplanation: Boolean = false,
     onBatchWriteExplanationAccepted: () -> Unit = {},
     onBatchWriteExplanationDismissed: () -> Unit = {},
+    albumName: String? = null,
+    onChangeAlbum: () -> Unit = {},
 ) {
     val resolver = LocalContext.current.contentResolver
     Column(
@@ -48,6 +50,19 @@ fun ReviewScreen(
 
         when {
             state.current != null -> {
+                if (albumName != null) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "Álbum: $albumName",
+                            modifier = Modifier.weight(1f),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        TextButton(onClick = onChangeAlbum) { Text("Cambiar") }
+                    }
+                }
                 Text(
                     text = "Foto ${state.reviewedCount + 1} de ${state.batchTotal}",
                     style = MaterialTheme.typography.labelLarge,
@@ -148,7 +163,7 @@ private fun SummaryState(state: ReviewSessionSnapshot, onLoadMore: () -> Unit) {
         )
         Spacer(Modifier.height(24.dp))
         if (state.hasMorePhotos) {
-            Button(onClick = onLoadMore) { Text("Cargar 200 más") }
+            Button(onClick = onLoadMore) { Text("Cargar ${state.batchSize} más") }
         } else {
             Text("No quedan más fotos para revisar.")
         }
@@ -171,7 +186,7 @@ private fun EmptyState() {
 }
 
 @Composable
-fun LoadingState() {
+fun LoadingState(message: String = "Cargando tus fotos…") {
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -179,6 +194,6 @@ fun LoadingState() {
     ) {
         CircularProgressIndicator()
         Spacer(Modifier.height(16.dp))
-        Text("Cargando tus fotos…")
+        Text(message)
     }
 }

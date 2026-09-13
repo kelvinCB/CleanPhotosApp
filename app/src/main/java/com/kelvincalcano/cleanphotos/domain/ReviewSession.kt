@@ -110,7 +110,7 @@ class ReviewSession(private val batchSize: Int = DEFAULT_BATCH_SIZE) {
     }
 
     private companion object {
-        const val DEFAULT_BATCH_SIZE = 200
+        const val DEFAULT_BATCH_SIZE = 300
     }
 }
 

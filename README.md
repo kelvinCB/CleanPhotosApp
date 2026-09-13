@@ -13,8 +13,9 @@ Aplicación Android local para revisar imágenes en tarjetas, conservarlas con s
 
 - Consulta todas las imágenes indexadas por `MediaStore.Images` en el volumen externo.
 - Incluye cámara, capturas de pantalla, WhatsApp y formatos de imagen que Android indexe.
-- Trabaja en lotes de 200 y no copia las fotos fuera del dispositivo.
-- La eliminación usa la confirmación oficial de Android. Una foto solo desaparece del flujo después de confirmar.
+- Primero muestra los álbumes detectados, con portada, cantidad y tamaño; permite elegir, por ejemplo, `Screenshots`, `WhatsApp`, `Camera` o `Todas las fotos`.
+- Trabaja en lotes de 300 dentro del álbum elegido y no copia las fotos fuera del dispositivo.
+- La eliminación usa la confirmación oficial de Android por lote. Una foto solo desaparece del flujo después de confirmar.
 - El resumen muestra el tamaño enviado a papelera. Android puede tardar en liberar físicamente ese espacio hasta vaciar la papelera.
 
 ## Compilar
