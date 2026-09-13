@@ -29,6 +29,7 @@ fun ReviewScreen(
     onTrash: () -> Unit,
     onLoadMore: () -> Unit,
     feedback: String? = null,
+    actionsEnabled: Boolean = true,
 ) {
     val resolver = LocalContext.current.contentResolver
     Column(
@@ -53,7 +54,7 @@ fun ReviewScreen(
                     resolver = resolver,
                     onSwipeLeft = onKeep,
                     onSwipeRight = onTrash,
-                    isPending = state.pendingTrash,
+                    isPending = state.pendingTrash || !actionsEnabled,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(14.dp))
@@ -63,12 +64,12 @@ fun ReviewScreen(
                 ) {
                     OutlinedButton(
                         onClick = onKeep,
-                        enabled = !state.pendingTrash,
+                        enabled = actionsEnabled && !state.pendingTrash,
                         modifier = Modifier.weight(1f),
                     ) { Text("Conservar") }
                     Button(
                         onClick = onTrash,
-                        enabled = !state.pendingTrash,
+                        enabled = actionsEnabled && !state.pendingTrash,
                         modifier = Modifier.weight(1f),
                     ) { Text("Papelera") }
                 }

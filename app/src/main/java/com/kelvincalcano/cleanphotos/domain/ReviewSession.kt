@@ -23,6 +23,9 @@ class ReviewSession(private val batchSize: Int = DEFAULT_BATCH_SIZE) {
     val pendingTrashPhoto: Photo?
         get() = pendingTrash
 
+    val currentBatch: List<Photo>
+        get() = activeBatch
+
     val reviewedCount: Int
         get() = keptCount + trashedCount
 

@@ -15,11 +15,13 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import com.kelvincalcano.cleanphotos.data.PhotoRepository
+import com.kelvincalcano.cleanphotos.domain.BatchWriteAccessRegistry
 import com.kelvincalcano.cleanphotos.domain.KeptPhotoStore
 import com.kelvincalcano.cleanphotos.domain.ReviewStateHolder
 import com.kelvincalcano.cleanphotos.ui.LoadingState
@@ -31,12 +33,16 @@ class MainActivity : ComponentActivity() {
     private lateinit var repository: PhotoRepository
     private lateinit var keptPhotoStore: KeptPhotoStore
     private val reviewState = ReviewStateHolder()
+    private val batchWriteAccess = BatchWriteAccessRegistry()
     private var reviewSnapshot by mutableStateOf(reviewState.state)
     private var hasFullAccess by mutableStateOf(false)
     private var hasPartialAccess by mutableStateOf(false)
     private var isLoading by mutableStateOf(false)
     private var feedback by mutableStateOf<String?>(null)
     private var pendingTrashId: Long? = null
+    private var pendingWriteUris: List<Uri> = emptyList()
+    private var requestedWriteBatchKey: String? = null
+    private var isRequestingBatchWriteAccess by mutableStateOf(false)
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -59,6 +65,20 @@ class MainActivity : ComponentActivity() {
             feedback = "No se movió la foto a la papelera"
         }
         pendingTrashId = null
+    }
+
+    private val writeAccessLauncher = registerForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult(),
+    ) { result ->
+        val requestedUris = pendingWriteUris
+        pendingWriteUris = emptyList()
+        isRequestingBatchWriteAccess = false
+        if (result.resultCode == Activity.RESULT_OK) {
+            batchWriteAccess.grant(requestedUris.map(Uri::toString))
+            feedback = "Papelera autorizada para este lote"
+        } else {
+            feedback = "Android pedirá confirmación individual si envías una foto a papelera"
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,7 +108,15 @@ class MainActivity : ComponentActivity() {
                         onTrash = ::trashCurrent,
                         onLoadMore = ::loadMore,
                         feedback = feedback,
+                        actionsEnabled = !isRequestingBatchWriteAccess,
                     )
+                }
+
+                val batchKey = reviewState.currentBatch.firstOrNull()?.uri
+                LaunchedEffect(batchKey, isLoading, hasFullAccess) {
+                    if (!isLoading && hasFullAccess && batchKey != null && batchKey != requestedWriteBatchKey) {
+                        requestBatchWriteAccess()
+                    }
                 }
             }
         }
@@ -141,10 +169,26 @@ class MainActivity : ComponentActivity() {
 
     private fun trashCurrent() {
         val photo = reviewState.requestTrashCurrent() ?: return
+        if (batchWriteAccess.hasAccess(photo)) {
+            val moved = runCatching { repository.moveToTrash(photo) }.getOrDefault(false)
+            if (moved) {
+                reviewState.confirmTrash(photo.id)
+                reviewSnapshot = reviewState.state
+                feedback = "Enviada a papelera"
+                return
+            }
+            reviewState.cancelTrash(photo.id)
+            reviewSnapshot = reviewState.state
+        }
+        val pendingPhoto = if (reviewState.state.pendingTrash) {
+            photo
+        } else {
+            reviewState.requestTrashCurrent() ?: return
+        }
         reviewSnapshot = reviewState.state
-        pendingTrashId = photo.id
+        pendingTrashId = pendingPhoto.id
         feedback = "Confirma en Android para moverla a papelera"
-        trashLauncher.launch(IntentSenderRequest.Builder(repository.createTrashRequest(photo)).build())
+        trashLauncher.launch(IntentSenderRequest.Builder(repository.createTrashRequest(pendingPhoto)).build())
     }
 
     private fun loadMore() {
@@ -160,6 +204,19 @@ class MainActivity : ComponentActivity() {
                 Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                 Uri.parse("package:$packageName"),
             ),
+        )
+    }
+
+    private fun requestBatchWriteAccess() {
+        val batch = reviewState.currentBatch
+        if (batch.isEmpty()) return
+        val missingUris = batchWriteAccess.missingUris(batch)
+        requestedWriteBatchKey = batch.first().uri
+        if (missingUris.isEmpty()) return
+        pendingWriteUris = missingUris.map(Uri::parse)
+        isRequestingBatchWriteAccess = true
+        writeAccessLauncher.launch(
+            IntentSenderRequest.Builder(repository.createWriteRequest(batch.filter { it.uri in missingUris })).build(),
         )
     }
 

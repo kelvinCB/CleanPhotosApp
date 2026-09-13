@@ -11,6 +11,9 @@ class ReviewStateHolder(
     var state: ReviewSessionSnapshot = session.snapshot()
         private set
 
+    val currentBatch: List<Photo>
+        get() = session.currentBatch
+
     fun load(photos: List<Photo>) {
         session.load(photos)
         publish()

@@ -1,6 +1,7 @@
 package com.kelvincalcano.cleanphotos.data
 
 import android.content.ContentResolver
+import android.content.ContentValues
 import android.content.ContentUris
 import android.content.IntentSender
 import android.net.Uri
@@ -44,6 +45,16 @@ class PhotoRepository(private val resolver: ContentResolver) {
     fun createTrashRequest(photo: Photo): IntentSender =
         MediaStore.createTrashRequest(resolver, listOf(Uri.parse(photo.uri)), true).intentSender
 
+    fun createWriteRequest(photos: Collection<Photo>): IntentSender =
+        MediaStore.createWriteRequest(resolver, photos.map { Uri.parse(it.uri) }).intentSender
+
+    fun moveToTrash(photo: Photo): Boolean {
+        val values = ContentValues().apply {
+            put(MediaStore.MediaColumns.IS_TRASHED, 1)
+        }
+        return resolver.update(Uri.parse(photo.uri), values, null, null) == 1
+    }
+
     internal companion object {
         const val selection = "${MediaStore.MediaColumns.IS_TRASHED} = 0"
         const val sortOrder = "${MediaStore.Images.Media.DATE_ADDED} ASC, ${MediaStore.Images.Media._ID} ASC"
@@ -66,4 +77,3 @@ class PhotoRepository(private val resolver: ContentResolver) {
         }
     }
 }
-
