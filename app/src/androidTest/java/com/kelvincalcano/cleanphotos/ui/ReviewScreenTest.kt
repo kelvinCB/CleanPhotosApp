@@ -149,6 +149,7 @@ class ReviewScreenTest {
             load(emptyList())
         }
         var changedAlbum = false
+        var reactivated = false
 
         composeRule.setContent {
             ReviewScreen(
@@ -159,14 +160,22 @@ class ReviewScreenTest {
                 albumName = "WhatsApp Documents",
                 albumPhotoCount = 2,
                 onChangeAlbum = { changedAlbum = true },
+                onReactivatePhotos = { reactivated = true },
             )
         }
 
         composeRule.onNodeWithText(
             "Las 2 fotos de WhatsApp Documents ya están marcadas como conservadas.",
         ).fetchSemanticsNode()
+        assert(
+            composeRule.onAllNodesWithText(
+                "Clean Photos no volverá a mostrarlas en una nueva sesión.",
+            ).fetchSemanticsNodes().isEmpty(),
+        )
         composeRule.onNodeWithText("Elegir otro álbum").performClick()
+        composeRule.onNodeWithText("Volver a activar fotos para clasificarlas").performClick()
 
         assert(changedAlbum)
+        assert(reactivated)
     }
 }

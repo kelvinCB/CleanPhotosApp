@@ -44,6 +44,19 @@ class KeptPhotoStoreTest {
         assertTrue(!store.isKept(kept))
     }
 
+    @Test
+    fun `reactivating an album removes all of its kept marks`() {
+        var persistedUris = emptySet<String>()
+        val store = KeptPhotoStore(persistedUris) { persistedUris = it }
+        val albumPhotos = listOf(photo(1), photo(2))
+
+        albumPhotos.forEach(store::markKept)
+
+        assertEquals(2, store.unmarkKept(albumPhotos))
+        assertEquals(emptySet<String>(), persistedUris)
+        assertEquals(albumPhotos, store.filterUnreviewed(albumPhotos))
+    }
+
     private fun photo(id: Long) = Photo(
         id = id,
         uri = "content://media/external/images/media/$id",

@@ -22,6 +22,14 @@ class KeptPhotoStore(
         return true
     }
 
+    fun unmarkKept(photos: Collection<Photo>): Int {
+        val removedUris = photos.map(Photo::uri).filter(keptUris::contains).toSet()
+        if (removedUris.isEmpty()) return 0
+        keptUris.removeAll(removedUris)
+        persist(keptUris.toSet())
+        return removedUris.size
+    }
+
     fun isKept(photo: Photo): Boolean = photo.uri in keptUris
 
     fun filterUnreviewed(photos: List<Photo>): List<Photo> = photos.filterNot(::isKept)

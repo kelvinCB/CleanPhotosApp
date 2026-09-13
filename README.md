@@ -17,6 +17,7 @@ Aplicación Android local para revisar imágenes en tarjetas, conservarlas con s
 - Trabaja en lotes de 300 dentro del álbum elegido y no copia las fotos fuera del dispositivo.
 - Al terminar un lote, permite cargar 300 fotos más o elegir otro álbum, incluso si el álbum actual tenía menos de 300 fotos.
 - Si un álbum conserva fotos en la galería, pero todas ya fueron marcadas como conservadas, muestra “Álbum completado” con el total y permite elegir otro álbum.
+- Desde un álbum completado se pueden volver a activar todas sus fotos conservadas para clasificarlas otra vez.
 - Después de conservar una foto, muestra hasta tres miniaturas anteriores por encima de la tarjeta actual y permite recuperar la última foto conservada; las fotos enviadas a papelera no se pueden recuperar desde esta pantalla.
 - La eliminación usa la confirmación oficial de Android por lote. Una foto solo desaparece del flujo después de confirmar.
 - El resumen muestra el tamaño enviado a papelera. Android puede tardar en liberar físicamente ese espacio hasta vaciar la papelera.

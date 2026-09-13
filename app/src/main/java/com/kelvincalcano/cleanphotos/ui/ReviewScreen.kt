@@ -46,6 +46,7 @@ fun ReviewScreen(
     albumName: String? = null,
     albumPhotoCount: Int? = null,
     onChangeAlbum: () -> Unit = {},
+    onReactivatePhotos: () -> Unit = {},
 ) {
     val resolver = LocalContext.current.contentResolver
     Column(
@@ -119,9 +120,8 @@ fun ReviewScreen(
                 CompletedAlbumState(
                     albumName = albumName.orEmpty(),
                     photoCount = albumPhotoCount,
-                    canUndo = state.canUndo,
-                    onUndo = onUndo,
                     onChangeAlbum = onChangeAlbum,
+                    onReactivatePhotos = onReactivatePhotos,
                 )
 
             !state.hasPhotos -> EmptyState(onChangeAlbum = onChangeAlbum)
@@ -285,9 +285,8 @@ private fun EmptyState(onChangeAlbum: () -> Unit) {
 private fun CompletedAlbumState(
     albumName: String,
     photoCount: Int,
-    canUndo: Boolean,
-    onUndo: () -> Unit,
     onChangeAlbum: () -> Unit,
+    onReactivatePhotos: () -> Unit,
 ) {
     val isSingular = photoCount == 1
     Column(
@@ -306,16 +305,11 @@ private fun CompletedAlbumState(
                 "Las $photoCount fotos de $albumName ya están marcadas como conservadas."
             },
         )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "Clean Photos no volverá a mostrarlas en una nueva sesión.",
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        if (canUndo) {
-            Spacer(Modifier.height(12.dp))
-            TextButton(onClick = onUndo) { Text("Recuperar foto") }
+        Spacer(Modifier.height(28.dp))
+        Button(onClick = onReactivatePhotos) {
+            Text("Volver a activar fotos para clasificarlas")
         }
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(12.dp))
         OutlinedButton(onClick = onChangeAlbum) { Text("Elegir otro álbum") }
     }
 }

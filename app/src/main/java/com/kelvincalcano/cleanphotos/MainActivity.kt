@@ -129,6 +129,7 @@ class MainActivity : ComponentActivity() {
                         albumName = selectedAlbum?.name,
                         albumPhotoCount = selectedAlbum?.photoCount,
                         onChangeAlbum = ::showAlbumSelection,
+                        onReactivatePhotos = ::reactivatePhotos,
                     )
                 }
 
@@ -195,6 +196,19 @@ class MainActivity : ComponentActivity() {
     private fun showAlbumSelection() {
         selectedAlbum = null
         feedback = null
+    }
+
+    private fun reactivatePhotos() {
+        val album = selectedAlbum ?: return
+        isLoading = true
+        lifecycleScope.launch {
+            val photos = repository.loadPhotos(album)
+            keptPhotoStore.unmarkKept(photos)
+            reviewState.load(photos)
+            reviewSnapshot = reviewState.state
+            isLoading = false
+            feedback = "Fotos reactivadas para clasificar"
+        }
     }
 
     private fun keepCurrent() {
