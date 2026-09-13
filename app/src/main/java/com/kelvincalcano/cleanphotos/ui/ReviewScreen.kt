@@ -301,9 +301,9 @@ private fun CompletedAlbumState(
         Spacer(Modifier.height(12.dp))
         Text(
             text = if (isSingular) {
-                "La única foto de $albumName ya está marcada como completada."
+                "La única foto de $albumName ya está marcada como conservada."
             } else {
-                "Las $photoCount fotos de $albumName ya están marcadas como completadas."
+                "Las $photoCount fotos de $albumName ya están marcadas como conservadas."
             },
         )
         Spacer(Modifier.height(8.dp))

@@ -163,7 +163,7 @@ class ReviewScreenTest {
         }
 
         composeRule.onNodeWithText(
-            "Las 2 fotos de WhatsApp Documents ya están marcadas como completadas.",
+            "Las 2 fotos de WhatsApp Documents ya están marcadas como conservadas.",
         ).fetchSemanticsNode()
         composeRule.onNodeWithText("Elegir otro álbum").performClick()
 
