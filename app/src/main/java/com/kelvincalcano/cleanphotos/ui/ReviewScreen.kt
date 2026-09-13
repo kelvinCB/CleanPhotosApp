@@ -44,6 +44,7 @@ fun ReviewScreen(
     onBatchWriteExplanationAccepted: () -> Unit = {},
     onBatchWriteExplanationDismissed: () -> Unit = {},
     albumName: String? = null,
+    albumPhotoCount: Int? = null,
     onChangeAlbum: () -> Unit = {},
 ) {
     val resolver = LocalContext.current.contentResolver
@@ -114,7 +115,16 @@ fun ReviewScreen(
                 }
             }
 
-            !state.hasPhotos -> EmptyState()
+            !state.hasPhotos && albumPhotoCount != null && albumPhotoCount > 0 ->
+                CompletedAlbumState(
+                    albumName = albumName.orEmpty(),
+                    photoCount = albumPhotoCount,
+                    canUndo = state.canUndo,
+                    onUndo = onUndo,
+                    onChangeAlbum = onChangeAlbum,
+                )
+
+            !state.hasPhotos -> EmptyState(onChangeAlbum = onChangeAlbum)
 
             else -> {
                 SummaryState(
@@ -255,7 +265,7 @@ private fun PhotoStack(
 }
 
 @Composable
-private fun EmptyState() {
+private fun EmptyState(onChangeAlbum: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -266,6 +276,47 @@ private fun EmptyState() {
         Text("No hay fotos disponibles", style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(8.dp))
         Text("No se encontraron imágenes en la galería del dispositivo.")
+        Spacer(Modifier.height(24.dp))
+        OutlinedButton(onClick = onChangeAlbum) { Text("Elegir otro álbum") }
+    }
+}
+
+@Composable
+private fun CompletedAlbumState(
+    albumName: String,
+    photoCount: Int,
+    canUndo: Boolean,
+    onUndo: () -> Unit,
+    onChangeAlbum: () -> Unit,
+) {
+    val isSingular = photoCount == 1
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 64.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text("Álbum completado", style = MaterialTheme.typography.headlineSmall)
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = if (isSingular) {
+                "La única foto de $albumName ya está marcada como completada."
+            } else {
+                "Las $photoCount fotos de $albumName ya están marcadas como completadas."
+            },
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Clean Photos no volverá a mostrarlas en una nueva sesión.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (canUndo) {
+            Spacer(Modifier.height(12.dp))
+            TextButton(onClick = onUndo) { Text("Recuperar foto") }
+        }
+        Spacer(Modifier.height(24.dp))
+        OutlinedButton(onClick = onChangeAlbum) { Text("Elegir otro álbum") }
     }
 }
 

@@ -142,4 +142,31 @@ class ReviewScreenTest {
 
         assert(composeRule.onAllNodesWithText("Recuperar foto").fetchSemanticsNodes().isEmpty())
     }
+
+    @Test
+    fun completedAlbum_explainsThatAllPhotosWereAlreadyMarked() {
+        val session = ReviewSession(batchSize = 300).apply {
+            load(emptyList())
+        }
+        var changedAlbum = false
+
+        composeRule.setContent {
+            ReviewScreen(
+                state = session.snapshot(),
+                onKeep = {},
+                onTrash = {},
+                onLoadMore = {},
+                albumName = "WhatsApp Documents",
+                albumPhotoCount = 2,
+                onChangeAlbum = { changedAlbum = true },
+            )
+        }
+
+        composeRule.onNodeWithText(
+            "Las 2 fotos de WhatsApp Documents ya están marcadas como completadas.",
+        ).fetchSemanticsNode()
+        composeRule.onNodeWithText("Elegir otro álbum").performClick()
+
+        assert(changedAlbum)
+    }
 }

@@ -127,6 +127,7 @@ class MainActivity : ComponentActivity() {
                         onBatchWriteExplanationAccepted = ::acknowledgeBatchWriteExplanation,
                         onBatchWriteExplanationDismissed = ::dismissBatchWriteExplanation,
                         albumName = selectedAlbum?.name,
+                        albumPhotoCount = selectedAlbum?.photoCount,
                         onChangeAlbum = ::showAlbumSelection,
                     )
                 }

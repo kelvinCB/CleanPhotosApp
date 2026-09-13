@@ -54,6 +54,7 @@ class PhotoRepository(private val resolver: ContentResolver) {
             add(allPhotos)
             addAll(
                 albums.values
+                    .filter { it.photoCount > 0 }
                     .map { accumulator ->
                         mapAlbumRow(
                             bucketId = accumulator.bucketId,

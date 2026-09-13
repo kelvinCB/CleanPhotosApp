@@ -12,6 +12,7 @@ Crear una aplicación Android ligera para revisar todas las imágenes indexadas 
 - Procesar como máximo 300 tarjetas por lote; no cargar los bytes de todas las fotos en memoria.
 - Después de cada lote, informar revisadas, conservadas, enviadas a papelera y tamaño acumulado enviado a papelera. Ofrecer “Cargar 300 más” o finalizar si no quedan imágenes.
 - Cuando el lote o el álbum termina, ofrecer “Elegir otro álbum” para volver a la selección sin perder las decisiones ya tomadas.
+- Si el álbum contiene imágenes, pero todas fueron conservadas o enviadas a papelera en sesiones anteriores, mostrar “Álbum completado” con el nombre y la cantidad, en lugar del estado genérico sin fotos.
 - Tras conservar una foto, mostrar hasta tres miniaturas de fotos conservadas anteriores en una franja separada, encima de la tarjeta actual y sin cubrirla.
 - “Recuperar foto” solo debe deshacer la última decisión de conservar y quitar esa foto del registro persistente de conservadas. Las fotos enviadas a papelera no ofrecen deshacer desde la pantalla de revisión.
 - Consultar el tamaño original (`MediaStore.MediaColumns.SIZE`) y formatearlo en B/KB/MB/GB.
@@ -43,6 +44,7 @@ Crear una aplicación Android ligera para revisar todas las imágenes indexadas 
 6. “Cargar 300 más” continúa sin reiniciar la sesión ni repetir elementos.
 7. Cuando no quedan imágenes, se muestra el estado final, el espacio enviado a papelera y “Elegir otro álbum”.
 8. “Elegir otro álbum” vuelve a la selección de álbumes y permite iniciar la revisión de otro álbum.
+9. Si el filtro de fotos pendientes queda vacío y el álbum original tenía imágenes, se muestra el mensaje de álbum completado y “Elegir otro álbum”.
 9. Las miniaturas anteriores aparecen fuera de la tarjeta actual y nunca se superponen con ella.
 10. “Recuperar foto” aparece para una conservación, restaura esa foto como actual y no aparece después de una decisión de papelera.
 11. Las pruebas unitarias cubren la máquina de estados, el cálculo de lotes, cancelación de papelera, recuperación de conservadas y formato de espacio; las pruebas de UI cubren la salida de un álbum corto, la separación visual y la ausencia de recuperación tras papelera.
