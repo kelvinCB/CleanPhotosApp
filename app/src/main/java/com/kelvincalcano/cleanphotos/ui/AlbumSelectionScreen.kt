@@ -14,8 +14,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
@@ -50,17 +51,14 @@ fun AlbumSelectionScreen(
             .padding(horizontal = 20.dp, vertical = 16.dp),
     ) {
         Text("Elige un álbum", style = MaterialTheme.typography.headlineSmall)
-        Text(
-            "Selecciona de dónde quieres revisar fotos. Puedes empezar por Capturas de pantalla, WhatsApp o Cámara.",
-            modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
 
         if (albums.isEmpty()) {
             Text("No se encontraron álbumes con fotos.")
         } else {
-            LazyColumn(
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 items(albums, key = PhotoAlbum::id) { album ->
@@ -87,23 +85,20 @@ private fun AlbumRow(
             .fillMaxWidth()
             .semantics { contentDescription = "Álbum ${album.name}" },
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             AlbumCover(album.coverUri, resolver)
-            Column {
-                Text(album.name, style = MaterialTheme.typography.titleMedium)
-                Text("${album.photoCount} fotos")
-                Text(
-                    formatBytes(album.totalBytes),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
+            Text(album.name, style = MaterialTheme.typography.titleMedium)
+            Text("${album.photoCount} fotos")
+            Text(
+                formatBytes(album.totalBytes),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+            )
         }
     }
 }

@@ -13,6 +13,7 @@ Crear una aplicación Android ligera para revisar todas las imágenes indexadas 
 - Después de cada lote, informar revisadas, conservadas, enviadas a papelera y tamaño acumulado enviado a papelera. Ofrecer “Cargar 300 más” o finalizar si no quedan imágenes.
 - Cuando el lote o el álbum termina, ofrecer “Elegir otro álbum” para volver a la selección sin perder las decisiones ya tomadas.
 - Si el álbum contiene imágenes, pero todas fueron conservadas o enviadas a papelera en sesiones anteriores, mostrar “Álbum completado” con el nombre y la cantidad, en lugar del estado genérico sin fotos.
+- Mostrar la selección de álbumes en dos columnas, dejando “Todas las fotos” como la primera opción.
 - En el estado de álbum completado, ofrecer “Volver a activar fotos para clasificarlas” para quitar las marcas de conservadas de ese álbum y abrirlo desde la primera imagen.
 - Tras conservar una foto, mostrar hasta tres miniaturas de fotos conservadas anteriores en una franja separada, encima de la tarjeta actual y sin cubrirla.
 - “Recuperar foto” solo debe deshacer la última decisión de conservar y quitar esa foto del registro persistente de conservadas. Las fotos enviadas a papelera no ofrecen deshacer desde la pantalla de revisión.
