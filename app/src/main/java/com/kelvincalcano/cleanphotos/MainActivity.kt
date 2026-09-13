@@ -20,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import com.kelvincalcano.cleanphotos.data.PhotoRepository
+import com.kelvincalcano.cleanphotos.domain.KeptPhotoStore
 import com.kelvincalcano.cleanphotos.domain.ReviewStateHolder
 import com.kelvincalcano.cleanphotos.ui.LoadingState
 import com.kelvincalcano.cleanphotos.ui.PermissionScreen
@@ -28,6 +29,7 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private lateinit var repository: PhotoRepository
+    private lateinit var keptPhotoStore: KeptPhotoStore
     private val reviewState = ReviewStateHolder()
     private var reviewSnapshot by mutableStateOf(reviewState.state)
     private var hasFullAccess by mutableStateOf(false)
@@ -63,6 +65,12 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         repository = PhotoRepository(contentResolver)
+        val keptPreferences = getSharedPreferences(KEPT_PHOTOS_PREFERENCES, MODE_PRIVATE)
+        keptPhotoStore = KeptPhotoStore(
+            initiallyKeptUris = keptPreferences.getStringSet(KEPT_PHOTOS_KEY, emptySet()).orEmpty(),
+        ) { keptUris ->
+            keptPreferences.edit().putStringSet(KEPT_PHOTOS_KEY, keptUris).apply()
+        }
         refreshAccessState()
         if (hasFullAccess) loadPhotos()
         setContent {
@@ -115,7 +123,7 @@ class MainActivity : ComponentActivity() {
     private fun loadPhotos() {
         isLoading = true
         lifecycleScope.launch {
-            reviewState.load(repository.loadPhotos())
+            reviewState.load(keptPhotoStore.filterUnreviewed(repository.loadPhotos()))
             reviewSnapshot = reviewState.state
             isLoading = false
             feedback = null
@@ -123,7 +131,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun keepCurrent() {
+        val photo = reviewState.state.current ?: return
         if (reviewState.keepCurrent()) {
+            keptPhotoStore.markKept(photo)
             reviewSnapshot = reviewState.state
             feedback = "Conservada"
         }
@@ -151,5 +161,10 @@ class MainActivity : ComponentActivity() {
                 Uri.parse("package:$packageName"),
             ),
         )
+    }
+
+    private companion object {
+        const val KEPT_PHOTOS_PREFERENCES = "kept_photos"
+        const val KEPT_PHOTOS_KEY = "kept_uris"
     }
 }
