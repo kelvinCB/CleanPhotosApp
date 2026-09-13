@@ -91,19 +91,21 @@ class ReviewSessionTest {
     }
 
     @Test
-    fun `undoing a confirmed trash brings the same photo back and removes its bytes`() {
+    fun `confirmed trash cannot be undone or shown as a previous photo`() {
         val session = ReviewSession(batchSize = 2)
-        session.load(listOf(photo(1, sizeBytes = 4_000), photo(2)))
+        session.load(listOf(photo(1), photo(2, sizeBytes = 4_000), photo(3)))
 
         session.requestTrashCurrent()
         assertTrue(session.confirmTrash(1L))
-        val undone = session.undoLastDecision()
+        assertEquals(2L, session.current?.id)
+        session.requestTrashCurrent()
+        assertTrue(session.confirmTrash(2L))
 
-        assertEquals(1L, undone?.photo?.id)
-        assertEquals(PhotoDecision.TRASH, undone?.decision)
-        assertEquals(1L, session.current?.id)
-        assertEquals(0, session.trashedCount)
-        assertEquals(0L, session.trashedBytes)
+        assertTrue(session.loadNextBatch())
+        assertEquals(3L, session.current?.id)
+        assertFalse(session.snapshot().canUndo)
+        assertTrue(session.snapshot().previousPhotos.isEmpty())
+        assertNull(session.undoLastDecision())
     }
 
     @Test
@@ -130,6 +132,20 @@ class ReviewSessionTest {
         repeat(4) { assertTrue(session.keepCurrent()) }
 
         assertEquals(listOf(4L, 3L, 2L), session.snapshot().previousPhotos.map(Photo::id))
+    }
+
+    @Test
+    fun `previous photos include only kept decisions`() {
+        val session = ReviewSession(batchSize = 4)
+        session.load((1L..4L).map(::photo))
+
+        assertTrue(session.keepCurrent())
+        session.requestTrashCurrent()
+        assertTrue(session.confirmTrash(2L))
+        assertTrue(session.keepCurrent())
+
+        assertEquals(listOf(3L, 1L), session.snapshot().previousPhotos.map(Photo::id))
+        assertTrue(session.snapshot().canUndo)
     }
 
     @Test

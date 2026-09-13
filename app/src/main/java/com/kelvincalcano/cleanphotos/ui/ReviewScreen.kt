@@ -28,7 +28,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import com.kelvincalcano.cleanphotos.domain.ReviewSessionSnapshot
 import com.kelvincalcano.cleanphotos.domain.formatBytes
 
@@ -205,28 +204,10 @@ private fun PhotoStack(
     onTrash: () -> Unit,
     actionsEnabled: Boolean,
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(420.dp),
-    ) {
-        state.current?.let { photo ->
-            PhotoCard(
-                photo = photo,
-                resolver = resolver,
-                onSwipeLeft = onKeep,
-                onSwipeRight = onTrash,
-                isPending = state.pendingTrash || !actionsEnabled,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-
+    Column(modifier = Modifier.fillMaxWidth()) {
         if (state.previousPhotos.isNotEmpty()) {
             Column(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(12.dp)
-                    .zIndex(2f),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
@@ -235,7 +216,7 @@ private fun PhotoStack(
                     style = MaterialTheme.typography.labelMedium,
                     modifier = Modifier
                         .background(
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                            MaterialTheme.colorScheme.surfaceVariant,
                             RoundedCornerShape(8.dp),
                         )
                         .padding(horizontal = 8.dp, vertical = 3.dp),
@@ -257,6 +238,18 @@ private fun PhotoStack(
                     }
                 }
             }
+            Spacer(Modifier.height(12.dp))
+        }
+
+        state.current?.let { photo ->
+            PhotoCard(
+                photo = photo,
+                resolver = resolver,
+                onSwipeLeft = onKeep,
+                onSwipeRight = onTrash,
+                isPending = state.pendingTrash || !actionsEnabled,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }

@@ -25,8 +25,6 @@ import com.kelvincalcano.cleanphotos.domain.BatchWritePromptController
 import com.kelvincalcano.cleanphotos.data.PhotoRepository
 import com.kelvincalcano.cleanphotos.domain.BatchWriteAccessRegistry
 import com.kelvincalcano.cleanphotos.domain.KeptPhotoStore
-import com.kelvincalcano.cleanphotos.domain.UndoableDecision
-import com.kelvincalcano.cleanphotos.domain.PhotoDecision
 import com.kelvincalcano.cleanphotos.domain.ReviewStateHolder
 import com.kelvincalcano.cleanphotos.ui.LoadingState
 import com.kelvincalcano.cleanphotos.ui.AlbumSelectionScreen
@@ -49,11 +47,9 @@ class MainActivity : ComponentActivity() {
     private var isLoading by mutableStateOf(false)
     private var feedback by mutableStateOf<String?>(null)
     private var pendingTrashId: Long? = null
-    private var pendingRestore: UndoableDecision? = null
     private var pendingWriteUris: List<Uri> = emptyList()
     private var showBatchWriteExplanation by mutableStateOf(false)
     private var isRequestingBatchWriteAccess by mutableStateOf(false)
-    private var isRequestingRestore by mutableStateOf(false)
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -65,18 +61,6 @@ class MainActivity : ComponentActivity() {
     private val trashLauncher = registerForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult(),
     ) { result ->
-        val restore = pendingRestore
-        if (restore != null) {
-            pendingRestore = null
-            isRequestingRestore = false
-            if (result.resultCode == Activity.RESULT_OK) {
-                completeUndo(restore)
-            } else {
-                feedback = "No se recuperó la foto"
-            }
-            return@registerForActivityResult
-        }
-
         val photoId = pendingTrashId ?: return@registerForActivityResult
         if (result.resultCode == Activity.RESULT_OK) {
             reviewState.confirmTrash(photoId)
@@ -138,7 +122,7 @@ class MainActivity : ComponentActivity() {
                         onLoadMore = ::loadMore,
                         onUndo = ::undoLastDecision,
                         feedback = feedback,
-                        actionsEnabled = !isRequestingBatchWriteAccess && !isRequestingRestore,
+                        actionsEnabled = !isRequestingBatchWriteAccess,
                         showBatchWriteExplanation = showBatchWriteExplanation,
                         onBatchWriteExplanationAccepted = ::acknowledgeBatchWriteExplanation,
                         onBatchWriteExplanationDismissed = ::dismissBatchWriteExplanation,
@@ -253,26 +237,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun undoLastDecision() {
-        val decision = reviewState.lastDecision() ?: return
-        if (decision.decision == PhotoDecision.KEEP) {
-            completeUndo(decision)
-            return
-        }
-
-        pendingRestore = decision
-        isRequestingRestore = true
-        feedback = "Confirma en Android para recuperar la foto"
-        trashLauncher.launch(
-            IntentSenderRequest.Builder(repository.createRestoreRequest(decision.photo)).build(),
-        )
-    }
-
-    private fun completeUndo(expected: UndoableDecision) {
         val undone = reviewState.undoLastDecision() ?: return
-        if (undone.photo.uri != expected.photo.uri) return
-        if (undone.decision == PhotoDecision.KEEP) {
-            keptPhotoStore.unmarkKept(undone.photo)
-        }
+        keptPhotoStore.unmarkKept(undone.photo)
         reviewSnapshot = reviewState.state
         feedback = "Foto recuperada"
     }

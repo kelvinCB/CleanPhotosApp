@@ -45,7 +45,7 @@ class ReviewSession(private val batchSize: Int = DEFAULT_BATCH_SIZE) {
         get() = photos.isNotEmpty()
 
     val canUndo: Boolean
-        get() = decisions.isNotEmpty() && pendingTrash == null
+        get() = decisions.lastOrNull()?.decision == PhotoDecision.KEEP && pendingTrash == null
 
     fun lastDecision(): UndoableDecision? = decisions.lastOrNull()
 
@@ -61,7 +61,11 @@ class ReviewSession(private val batchSize: Int = DEFAULT_BATCH_SIZE) {
         isBatchComplete = isBatchComplete,
         hasMorePhotos = hasMorePhotos,
         hasPhotos = hasPhotos,
-        previousPhotos = decisions.asReversed().take(PREVIOUS_PHOTO_LIMIT).map(UndoableDecision::photo),
+        previousPhotos = decisions
+            .asReversed()
+            .filter { it.decision == PhotoDecision.KEEP }
+            .take(PREVIOUS_PHOTO_LIMIT)
+            .map(UndoableDecision::photo),
         canUndo = canUndo,
     )
 

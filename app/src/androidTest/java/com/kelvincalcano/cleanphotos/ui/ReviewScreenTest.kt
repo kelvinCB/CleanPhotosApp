@@ -2,6 +2,7 @@ package com.kelvincalcano.cleanphotos.ui
 
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -103,9 +104,42 @@ class ReviewScreenTest {
             )
         }
 
-        composeRule.onNodeWithContentDescription("Foto anterior first.jpg").fetchSemanticsNode()
+        val previousBounds = composeRule
+            .onNodeWithContentDescription("Foto anterior first.jpg")
+            .fetchSemanticsNode()
+            .boundsInRoot
+        val currentBounds = composeRule
+            .onNodeWithContentDescription("Foto second.jpg")
+            .fetchSemanticsNode()
+            .boundsInRoot
+        assert(previousBounds.bottom <= currentBounds.top)
         composeRule.onNodeWithText("Recuperar foto").performClick()
 
         assert(recovered)
+    }
+
+    @Test
+    fun reviewScreen_hidesRecoveryAfterTrashDecision() {
+        val session = ReviewSession(batchSize = 2).apply {
+            load(
+                listOf(
+                    Photo(1L, "content://test/1", "first.jpg", 12_000L),
+                    Photo(2L, "content://test/2", "second.jpg", 12_000L),
+                ),
+            )
+            requestTrashCurrent()
+            confirmTrash(1L)
+        }
+
+        composeRule.setContent {
+            ReviewScreen(
+                state = session.snapshot(),
+                onKeep = {},
+                onTrash = {},
+                onLoadMore = {},
+            )
+        }
+
+        assert(composeRule.onAllNodesWithText("Recuperar foto").fetchSemanticsNodes().isEmpty())
     }
 }

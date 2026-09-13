@@ -112,9 +112,6 @@ class PhotoRepository(private val resolver: ContentResolver) {
     fun createTrashRequest(photo: Photo): IntentSender =
         MediaStore.createTrashRequest(resolver, listOf(Uri.parse(photo.uri)), true).intentSender
 
-    fun createRestoreRequest(photo: Photo): IntentSender =
-        MediaStore.createTrashRequest(resolver, listOf(Uri.parse(photo.uri)), false).intentSender
-
     fun createWriteRequest(photos: Collection<Photo>): IntentSender =
         MediaStore.createWriteRequest(resolver, photos.map { Uri.parse(it.uri) }).intentSender
 
