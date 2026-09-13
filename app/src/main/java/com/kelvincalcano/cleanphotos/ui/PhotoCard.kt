@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,6 +35,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.kelvincalcano.cleanphotos.domain.Photo
@@ -129,13 +131,18 @@ fun PhotoCard(
 }
 
 @Composable
-private fun PhotoThumbnail(photo: Photo, resolver: ContentResolver) {
+internal fun PhotoThumbnail(
+    photo: Photo,
+    resolver: ContentResolver,
+    thumbnailHeight: Dp = 420.dp,
+) {
     val bitmap by produceState<Bitmap?>(initialValue = null, key1 = photo.uri) {
         value = withContext(Dispatchers.IO) {
             runCatching {
                 val source = ImageDecoder.createSource(resolver, Uri.parse(photo.uri))
                 ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
-                    decoder.setTargetSize(900, 1_200)
+                    val targetWidth = if (thumbnailHeight <= 100.dp) 240 else 900
+                    decoder.setTargetSize(targetWidth, targetWidth * 4 / 3)
                     decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
                 }
             }.getOrNull()
@@ -149,13 +156,13 @@ private fun PhotoThumbnail(photo: Photo, resolver: ContentResolver) {
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxWidth()
-                .size(420.dp),
+                .height(thumbnailHeight),
         )
     } else {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .size(420.dp),
+                .height(thumbnailHeight),
             contentAlignment = Alignment.Center,
         ) {
             Text("Cargando foto…", color = MaterialTheme.colorScheme.onSurfaceVariant)

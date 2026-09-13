@@ -16,6 +16,12 @@ class KeptPhotoStore(
         return true
     }
 
+    fun unmarkKept(photo: Photo): Boolean {
+        if (!keptUris.remove(photo.uri)) return false
+        persist(keptUris.toSet())
+        return true
+    }
+
     fun isKept(photo: Photo): Boolean = photo.uri in keptUris
 
     fun filterUnreviewed(photos: List<Photo>): List<Photo> = photos.filterNot(::isKept)

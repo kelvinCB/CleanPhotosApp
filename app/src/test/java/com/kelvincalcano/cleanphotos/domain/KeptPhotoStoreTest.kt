@@ -31,6 +31,19 @@ class KeptPhotoStoreTest {
         assertEquals(setOf(kept.uri), persistedUris)
     }
 
+    @Test
+    fun `unmarking a kept photo removes it from persisted entries`() {
+        var persistedUris = emptySet<String>()
+        val store = KeptPhotoStore(persistedUris) { persistedUris = it }
+        val kept = photo(1)
+
+        store.markKept(kept)
+
+        assertTrue(store.unmarkKept(kept))
+        assertEquals(emptySet<String>(), persistedUris)
+        assertTrue(!store.isKept(kept))
+    }
+
     private fun photo(id: Long) = Photo(
         id = id,
         uri = "content://media/external/images/media/$id",

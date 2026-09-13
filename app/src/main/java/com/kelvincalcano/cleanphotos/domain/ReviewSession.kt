@@ -5,38 +5,49 @@ class ReviewSession(private val batchSize: Int = DEFAULT_BATCH_SIZE) {
         require(batchSize > 0) { "batchSize must be positive" }
     }
 
-    private var remainingPhotos: List<Photo> = emptyList()
-    private var activeBatch: List<Photo> = emptyList()
-    private var currentIndex: Int = 0
+    private var photos: List<Photo> = emptyList()
+    private val decisions = mutableListOf<UndoableDecision>()
+    private var unlockedPhotoCount: Int = 0
+    private var batchStartIndex: Int = 0
     private var pendingTrash: Photo? = null
 
-    var keptCount: Int = 0
-        private set
-    var trashedCount: Int = 0
-        private set
-    var trashedBytes: Long = 0
-        private set
-
     val current: Photo?
-        get() = activeBatch.getOrNull(currentIndex)
+        get() = photos.getOrNull(decisions.size)
+            ?.takeIf { decisions.size < unlockedPhotoCount }
 
     val pendingTrashPhoto: Photo?
         get() = pendingTrash
 
     val currentBatch: List<Photo>
-        get() = activeBatch
+        get() = photos.drop(batchStartIndex).take(batchSize)
+
+    val keptCount: Int
+        get() = currentBatchDecisions.count { it.decision == PhotoDecision.KEEP }
+
+    val trashedCount: Int
+        get() = currentBatchDecisions.count { it.decision == PhotoDecision.TRASH }
+
+    val trashedBytes: Long
+        get() = currentBatchDecisions
+            .filter { it.decision == PhotoDecision.TRASH }
+            .sumOf { it.photo.sizeBytes.coerceAtLeast(0L) }
 
     val reviewedCount: Int
-        get() = keptCount + trashedCount
+        get() = currentBatchDecisions.size
 
     val isBatchComplete: Boolean
-        get() = activeBatch.isNotEmpty() && current == null && pendingTrash == null
+        get() = photos.isNotEmpty() && current == null && pendingTrash == null
 
     val hasMorePhotos: Boolean
-        get() = remainingPhotos.isNotEmpty()
+        get() = decisions.size < photos.size
 
     val hasPhotos: Boolean
-        get() = activeBatch.isNotEmpty() || remainingPhotos.isNotEmpty()
+        get() = photos.isNotEmpty()
+
+    val canUndo: Boolean
+        get() = decisions.isNotEmpty() && pendingTrash == null
+
+    fun lastDecision(): UndoableDecision? = decisions.lastOrNull()
 
     fun snapshot() = ReviewSessionSnapshot(
         current = current,
@@ -46,38 +57,32 @@ class ReviewSession(private val batchSize: Int = DEFAULT_BATCH_SIZE) {
         trashedCount = trashedCount,
         trashedBytes = trashedBytes,
         batchSize = batchSize,
-        batchTotal = activeBatch.size,
+        batchTotal = currentBatch.size,
         isBatchComplete = isBatchComplete,
         hasMorePhotos = hasMorePhotos,
         hasPhotos = hasPhotos,
+        previousPhotos = decisions.asReversed().take(PREVIOUS_PHOTO_LIMIT).map(UndoableDecision::photo),
+        canUndo = canUndo,
     )
 
     fun load(photos: List<Photo>) {
-        remainingPhotos = photos
-        resetBatchStats()
-        loadNextBatch()
+        this.photos = photos
+        decisions.clear()
+        pendingTrash = null
+        batchStartIndex = 0
+        unlockedPhotoCount = minOf(batchSize, photos.size)
     }
 
     fun loadNextBatch(): Boolean {
-        if (pendingTrash != null || (current != null && !isBatchComplete)) return false
-        if (remainingPhotos.isEmpty()) {
-            activeBatch = emptyList()
-            currentIndex = 0
-            return false
-        }
-        activeBatch = remainingPhotos.take(batchSize)
-        remainingPhotos = remainingPhotos.drop(activeBatch.size)
-        currentIndex = 0
-        pendingTrash = null
-        resetBatchStats()
+        if (pendingTrash != null || current != null || !hasMorePhotos) return false
+        batchStartIndex = unlockedPhotoCount
+        unlockedPhotoCount = minOf(unlockedPhotoCount + batchSize, photos.size)
         return true
     }
 
     fun keepCurrent(): Boolean {
         if (current == null || pendingTrash != null) return false
-        keptCount++
-        currentIndex++
-        return true
+        return recordDecision(PhotoDecision.KEEP)
     }
 
     fun requestTrashCurrent(): Photo? {
@@ -90,10 +95,7 @@ class ReviewSession(private val batchSize: Int = DEFAULT_BATCH_SIZE) {
         val photo = pendingTrash ?: return false
         if (photo.id != photoId) return false
         pendingTrash = null
-        trashedCount++
-        trashedBytes += photo.sizeBytes.coerceAtLeast(0)
-        currentIndex++
-        return true
+        return recordDecision(PhotoDecision.TRASH)
     }
 
     fun cancelTrash(photoId: Long): Boolean {
@@ -103,16 +105,44 @@ class ReviewSession(private val batchSize: Int = DEFAULT_BATCH_SIZE) {
         return true
     }
 
-    private fun resetBatchStats() {
-        keptCount = 0
-        trashedCount = 0
-        trashedBytes = 0
+    fun undoLastDecision(): UndoableDecision? {
+        if (!canUndo) return null
+        val undone = decisions.removeAt(decisions.lastIndex)
+        while (batchStartIndex > decisions.size) {
+            batchStartIndex = (batchStartIndex - batchSize).coerceAtLeast(0)
+        }
+        return undone
     }
+
+    private fun recordDecision(decision: PhotoDecision): Boolean {
+        val photo = current ?: return false
+        decisions += UndoableDecision(photo, decision)
+        if (decisions.size >= batchStartIndex + batchSize &&
+            unlockedPhotoCount > batchStartIndex + batchSize
+        ) {
+            batchStartIndex += batchSize
+        }
+        return true
+    }
+
+    private val currentBatchDecisions: List<UndoableDecision>
+        get() = decisions.drop(batchStartIndex).take(batchSize)
 
     private companion object {
         const val DEFAULT_BATCH_SIZE = 300
+        const val PREVIOUS_PHOTO_LIMIT = 3
     }
 }
+
+enum class PhotoDecision {
+    KEEP,
+    TRASH,
+}
+
+data class UndoableDecision(
+    val photo: Photo,
+    val decision: PhotoDecision,
+)
 
 data class ReviewSessionSnapshot(
     val current: Photo?,
@@ -126,4 +156,6 @@ data class ReviewSessionSnapshot(
     val isBatchComplete: Boolean,
     val hasMorePhotos: Boolean,
     val hasPhotos: Boolean,
+    val previousPhotos: List<Photo> = emptyList(),
+    val canUndo: Boolean = false,
 )

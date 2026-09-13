@@ -1,6 +1,7 @@
 package com.kelvincalcano.cleanphotos.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,6 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -19,8 +23,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.kelvincalcano.cleanphotos.domain.ReviewSessionSnapshot
 import com.kelvincalcano.cleanphotos.domain.formatBytes
 
@@ -30,6 +38,7 @@ fun ReviewScreen(
     onKeep: () -> Unit,
     onTrash: () -> Unit,
     onLoadMore: () -> Unit,
+    onUndo: () -> Unit = {},
     feedback: String? = null,
     actionsEnabled: Boolean = true,
     showBatchWriteExplanation: Boolean = false,
@@ -69,13 +78,12 @@ fun ReviewScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(12.dp))
-                PhotoCard(
-                    photo = state.current,
+                PhotoStack(
+                    state = state,
                     resolver = resolver,
-                    onSwipeLeft = onKeep,
-                    onSwipeRight = onTrash,
-                    isPending = state.pendingTrash || !actionsEnabled,
-                    modifier = Modifier.fillMaxWidth(),
+                    onKeep = onKeep,
+                    onTrash = onTrash,
+                    actionsEnabled = actionsEnabled,
                 )
                 Spacer(Modifier.height(14.dp))
                 Row(
@@ -99,6 +107,12 @@ fun ReviewScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (state.canUndo) {
+                    TextButton(
+                        onClick = onUndo,
+                        enabled = actionsEnabled && !state.pendingTrash,
+                    ) { Text("Recuperar foto") }
+                }
             }
 
             !state.hasPhotos -> EmptyState()
@@ -107,6 +121,8 @@ fun ReviewScreen(
                 SummaryState(
                     state = state,
                     onLoadMore = onLoadMore,
+                    onChangeAlbum = onChangeAlbum,
+                    onUndo = onUndo,
                 )
             }
         }
@@ -136,7 +152,12 @@ fun ReviewScreen(
 }
 
 @Composable
-private fun SummaryState(state: ReviewSessionSnapshot, onLoadMore: () -> Unit) {
+private fun SummaryState(
+    state: ReviewSessionSnapshot,
+    onLoadMore: () -> Unit,
+    onChangeAlbum: () -> Unit,
+    onUndo: () -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -166,6 +187,76 @@ private fun SummaryState(state: ReviewSessionSnapshot, onLoadMore: () -> Unit) {
             Button(onClick = onLoadMore) { Text("Cargar ${state.batchSize} más") }
         } else {
             Text("No quedan más fotos para revisar.")
+        }
+        if (state.canUndo) {
+            Spacer(Modifier.height(12.dp))
+            TextButton(onClick = onUndo) { Text("Recuperar foto") }
+        }
+        Spacer(Modifier.height(12.dp))
+        OutlinedButton(onClick = onChangeAlbum) { Text("Elegir otro álbum") }
+    }
+}
+
+@Composable
+private fun PhotoStack(
+    state: ReviewSessionSnapshot,
+    resolver: android.content.ContentResolver,
+    onKeep: () -> Unit,
+    onTrash: () -> Unit,
+    actionsEnabled: Boolean,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(420.dp),
+    ) {
+        state.current?.let { photo ->
+            PhotoCard(
+                photo = photo,
+                resolver = resolver,
+                onSwipeLeft = onKeep,
+                onSwipeRight = onTrash,
+                isPending = state.pendingTrash || !actionsEnabled,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        if (state.previousPhotos.isNotEmpty()) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(12.dp)
+                    .zIndex(2f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = "Anteriores",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier
+                        .background(
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                            RoundedCornerShape(8.dp),
+                        )
+                        .padding(horizontal = 8.dp, vertical = 3.dp),
+                )
+                Spacer(Modifier.height(6.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    state.previousPhotos.forEach { previousPhoto ->
+                        Box(
+                            modifier = Modifier
+                                .size(72.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .semantics {
+                                    contentDescription = "Foto anterior ${previousPhoto.displayName}"
+                                },
+                        ) {
+                            PhotoThumbnail(previousPhoto, resolver, thumbnailHeight = 72.dp)
+                        }
+                    }
+                }
+            }
         }
     }
 }

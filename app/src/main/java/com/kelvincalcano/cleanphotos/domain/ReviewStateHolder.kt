@@ -35,6 +35,12 @@ class ReviewStateHolder(
         if (changed) publish()
     }
 
+    fun lastDecision(): UndoableDecision? = session.lastDecision()
+
+    fun undoLastDecision(): UndoableDecision? = session.undoLastDecision().also { decision ->
+        if (decision != null) publish()
+    }
+
     fun loadNextBatch(): Boolean = session.loadNextBatch().also { changed ->
         if (changed) publish()
     }

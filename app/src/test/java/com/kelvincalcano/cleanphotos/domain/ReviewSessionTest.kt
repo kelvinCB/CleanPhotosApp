@@ -76,6 +76,63 @@ class ReviewSessionTest {
     }
 
     @Test
+    fun `undoing a keep brings the same photo back and removes the decision`() {
+        val session = ReviewSession(batchSize = 2)
+        session.load(listOf(photo(1), photo(2)))
+
+        assertTrue(session.keepCurrent())
+        val undone = session.undoLastDecision()
+
+        assertEquals(1L, undone?.photo?.id)
+        assertEquals(PhotoDecision.KEEP, undone?.decision)
+        assertEquals(1L, session.current?.id)
+        assertEquals(0, session.keptCount)
+        assertEquals(0, session.reviewedCount)
+    }
+
+    @Test
+    fun `undoing a confirmed trash brings the same photo back and removes its bytes`() {
+        val session = ReviewSession(batchSize = 2)
+        session.load(listOf(photo(1, sizeBytes = 4_000), photo(2)))
+
+        session.requestTrashCurrent()
+        assertTrue(session.confirmTrash(1L))
+        val undone = session.undoLastDecision()
+
+        assertEquals(1L, undone?.photo?.id)
+        assertEquals(PhotoDecision.TRASH, undone?.decision)
+        assertEquals(1L, session.current?.id)
+        assertEquals(0, session.trashedCount)
+        assertEquals(0L, session.trashedBytes)
+    }
+
+    @Test
+    fun `undo can cross a loaded batch and expose the previous photo again`() {
+        val session = ReviewSession(batchSize = 1)
+        session.load(listOf(photo(1), photo(2)))
+
+        assertTrue(session.keepCurrent())
+        assertTrue(session.loadNextBatch())
+        assertEquals(2L, session.current?.id)
+
+        session.undoLastDecision()
+
+        assertEquals(1L, session.current?.id)
+        assertTrue(session.keepCurrent())
+        assertEquals(2L, session.current?.id)
+    }
+
+    @Test
+    fun `snapshot exposes at most three previous photos with nearest first`() {
+        val session = ReviewSession(batchSize = 5)
+        session.load((1L..5L).map(::photo))
+
+        repeat(4) { assertTrue(session.keepCurrent()) }
+
+        assertEquals(listOf(4L, 3L, 2L), session.snapshot().previousPhotos.map(Photo::id))
+    }
+
+    @Test
     fun `formatBytes uses readable binary units`() {
         assertEquals("0 B", formatBytes(0))
         assertEquals("1.5 KB", formatBytes(1_536))

@@ -56,4 +56,56 @@ class ReviewScreenTest {
 
         assert(kept)
     }
+
+    @Test
+    fun completedShortAlbum_exposesChooseAnotherAlbumAction() {
+        val session = ReviewSession(batchSize = 300).apply {
+            load(listOf(Photo(1L, "content://test/1", "camera.jpg", 12_000L)))
+            keepCurrent()
+        }
+        var changedAlbum = false
+
+        composeRule.setContent {
+            ReviewScreen(
+                state = session.snapshot(),
+                onKeep = {},
+                onTrash = {},
+                onLoadMore = {},
+                onChangeAlbum = { changedAlbum = true },
+            )
+        }
+
+        composeRule.onNodeWithText("Elegir otro álbum").performClick()
+
+        assert(changedAlbum)
+    }
+
+    @Test
+    fun reviewScreen_showsPreviousPhotoAndRecoversIt() {
+        val session = ReviewSession(batchSize = 2).apply {
+            load(
+                listOf(
+                    Photo(1L, "content://test/1", "first.jpg", 12_000L),
+                    Photo(2L, "content://test/2", "second.jpg", 12_000L),
+                ),
+            )
+            keepCurrent()
+        }
+        var recovered = false
+
+        composeRule.setContent {
+            ReviewScreen(
+                state = session.snapshot(),
+                onKeep = {},
+                onTrash = {},
+                onLoadMore = {},
+                onUndo = { recovered = true },
+            )
+        }
+
+        composeRule.onNodeWithContentDescription("Foto anterior first.jpg").fetchSemanticsNode()
+        composeRule.onNodeWithText("Recuperar foto").performClick()
+
+        assert(recovered)
+    }
 }

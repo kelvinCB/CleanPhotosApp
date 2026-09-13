@@ -2,15 +2,16 @@
 
 ## Objetivo
 
-Crear una aplicación Android ligera para revisar todas las imágenes indexadas en el dispositivo en lotes de 200. Un swipe a la izquierda conserva la imagen; un swipe a la derecha solicita moverla a la papelera real del sistema. Al terminar cada lote, la app muestra el resumen y permite cargar 200 imágenes adicionales.
+Crear una aplicación Android ligera para revisar todas las imágenes indexadas en el dispositivo en lotes de 300. Un swipe a la izquierda conserva la imagen; un swipe a la derecha solicita moverla a la papelera real del sistema. Al terminar cada lote, la app muestra el resumen y permite cargar 300 imágenes adicionales o elegir otro álbum.
 
 ## Alcance funcional
 
 - Consultar `MediaStore.Images` para incluir fotos de cámara, capturas de pantalla, WhatsApp y todos los formatos de imagen que Android tenga indexados.
 - Excluir elementos que ya estén en la papelera y no consultar ni modificar vídeos.
 - Mostrar una tarjeta grande con la imagen actual y feedback visual breve: “Conservar” para izquierda, “Enviada a papelera” para derecha.
-- Procesar como máximo 200 tarjetas por lote; no cargar los bytes de todas las fotos en memoria.
-- Después de cada lote, informar revisadas, conservadas, enviadas a papelera y tamaño acumulado enviado a papelera. Ofrecer “Cargar 200 más” o finalizar si no quedan imágenes.
+- Procesar como máximo 300 tarjetas por lote; no cargar los bytes de todas las fotos en memoria.
+- Después de cada lote, informar revisadas, conservadas, enviadas a papelera y tamaño acumulado enviado a papelera. Ofrecer “Cargar 300 más” o finalizar si no quedan imágenes.
+- Cuando el lote o el álbum termina, ofrecer “Elegir otro álbum” para volver a la selección sin perder las decisiones ya tomadas.
 - Consultar el tamaño original (`MediaStore.MediaColumns.SIZE`) y formatearlo en B/KB/MB/GB.
 - Explicar que mover a papelera no garantiza liberar espacio físico inmediatamente: la liberación efectiva depende de cuándo Android vacíe la papelera.
 
@@ -36,8 +37,8 @@ Crear una aplicación Android ligera para revisar todas las imágenes indexadas 
 2. Swipe izquierdo avanza sin borrar y aumenta el contador de conservadas.
 3. Swipe derecho abre la confirmación de Android; al aceptar, la imagen desaparece, aumenta el contador de papelera y suma sus bytes.
 4. Si se cancela la confirmación, la imagen sigue disponible y no se suma espacio.
-5. El lote se detiene en 200 decisiones confirmadas y muestra su resumen.
-6. “Cargar 200 más” continúa sin reiniciar la sesión ni repetir elementos.
-7. Cuando no quedan imágenes, se muestra el estado final y el espacio enviado a papelera.
-8. Las pruebas unitarias cubren la máquina de estados, el cálculo de lotes, cancelación de papelera y formato de espacio.
-
+5. El lote se detiene en 300 decisiones confirmadas y muestra su resumen.
+6. “Cargar 300 más” continúa sin reiniciar la sesión ni repetir elementos.
+7. Cuando no quedan imágenes, se muestra el estado final, el espacio enviado a papelera y “Elegir otro álbum”.
+8. “Elegir otro álbum” vuelve a la selección de álbumes y permite iniciar la revisión de otro álbum.
+9. Las pruebas unitarias cubren la máquina de estados, el cálculo de lotes, cancelación de papelera y formato de espacio; las pruebas de UI cubren la salida de un álbum corto.
