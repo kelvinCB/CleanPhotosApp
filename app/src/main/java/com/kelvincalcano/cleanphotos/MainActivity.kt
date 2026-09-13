@@ -216,7 +216,7 @@ class MainActivity : ComponentActivity() {
         if (reviewState.keepCurrent()) {
             keptPhotoStore.markKept(photo)
             reviewSnapshot = reviewState.state
-            feedback = "Conservada"
+            feedback = null
         }
     }
 
