@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
+import com.kelvincalcano.cleanphotos.domain.BatchWritePromptController
 import com.kelvincalcano.cleanphotos.data.PhotoRepository
 import com.kelvincalcano.cleanphotos.domain.BatchWriteAccessRegistry
 import com.kelvincalcano.cleanphotos.domain.KeptPhotoStore
@@ -34,6 +35,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var keptPhotoStore: KeptPhotoStore
     private val reviewState = ReviewStateHolder()
     private val batchWriteAccess = BatchWriteAccessRegistry()
+    private val batchWritePrompt = BatchWritePromptController()
     private var reviewSnapshot by mutableStateOf(reviewState.state)
     private var hasFullAccess by mutableStateOf(false)
     private var hasPartialAccess by mutableStateOf(false)
@@ -41,7 +43,7 @@ class MainActivity : ComponentActivity() {
     private var feedback by mutableStateOf<String?>(null)
     private var pendingTrashId: Long? = null
     private var pendingWriteUris: List<Uri> = emptyList()
-    private var requestedWriteBatchKey: String? = null
+    private var showBatchWriteExplanation by mutableStateOf(false)
     private var isRequestingBatchWriteAccess by mutableStateOf(false)
 
     private val permissionLauncher = registerForActivityResult(
@@ -72,6 +74,7 @@ class MainActivity : ComponentActivity() {
     ) { result ->
         val requestedUris = pendingWriteUris
         pendingWriteUris = emptyList()
+        batchWritePrompt.finishNativeRequest()
         isRequestingBatchWriteAccess = false
         if (result.resultCode == Activity.RESULT_OK) {
             batchWriteAccess.grant(requestedUris.map(Uri::toString))
@@ -109,12 +112,15 @@ class MainActivity : ComponentActivity() {
                         onLoadMore = ::loadMore,
                         feedback = feedback,
                         actionsEnabled = !isRequestingBatchWriteAccess,
+                        showBatchWriteExplanation = showBatchWriteExplanation,
+                        onBatchWriteExplanationAccepted = ::acknowledgeBatchWriteExplanation,
+                        onBatchWriteExplanationDismissed = ::dismissBatchWriteExplanation,
                     )
                 }
 
                 val batchKey = reviewState.currentBatch.firstOrNull()?.uri
                 LaunchedEffect(batchKey, isLoading, hasFullAccess) {
-                    if (!isLoading && hasFullAccess && batchKey != null && batchKey != requestedWriteBatchKey) {
+                    if (!isLoading && hasFullAccess && batchKey != null) {
                         requestBatchWriteAccess()
                     }
                 }
@@ -211,13 +217,26 @@ class MainActivity : ComponentActivity() {
         val batch = reviewState.currentBatch
         if (batch.isEmpty()) return
         val missingUris = batchWriteAccess.missingUris(batch)
-        requestedWriteBatchKey = batch.first().uri
-        if (missingUris.isEmpty()) return
+        if (!batchWritePrompt.prepare(batch.first().uri, missingUris)) return
         pendingWriteUris = missingUris.map(Uri::parse)
+        showBatchWriteExplanation = batchWritePrompt.isExplanationVisible
+    }
+
+    private fun acknowledgeBatchWriteExplanation() {
+        val requestedUris = batchWritePrompt.acknowledgeExplanation()
+        pendingWriteUris = requestedUris.map(Uri::parse)
+        showBatchWriteExplanation = false
         isRequestingBatchWriteAccess = true
         writeAccessLauncher.launch(
-            IntentSenderRequest.Builder(repository.createWriteRequest(batch.filter { it.uri in missingUris })).build(),
+            IntentSenderRequest.Builder(repository.createWriteRequest(reviewState.currentBatch.filter { it.uri in requestedUris })).build(),
         )
+    }
+
+    private fun dismissBatchWriteExplanation() {
+        batchWritePrompt.dismissExplanation()
+        showBatchWriteExplanation = false
+        isRequestingBatchWriteAccess = false
+        feedback = "Puedes autorizar el permiso desde el botón Papelera si lo necesitas"
     }
 
     private companion object {
