@@ -1,4 +1,17 @@
 <resources>
-    <style name="Theme.CleanPhotos" parent="android:style/Theme.Material.Light.NoActionBar" />
-</resources>
+    <color name="icon_background">#0A4269</color>
 
+    <style name="Theme.CleanPhotos" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">#FF6F61</item>
+        <item name="android:navigationBarColor">#FAF8FC</item>
+        <item name="android:statusBarColor">#FAF8FC</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <style name="Theme.CleanPhotos.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/icon_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/logo_clean_photos</item>
+        <item name="postSplashScreenTheme">@style/Theme.CleanPhotos</item>
+    </style>
+</resources>

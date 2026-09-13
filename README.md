@@ -2,6 +2,13 @@
 
 Aplicación Android local para revisar imágenes en tarjetas, conservarlas con swipe a la izquierda y moverlas a la papelera del sistema con swipe a la derecha.
 
+## Identidad visual
+
+- Nombre visible: **Clean Photos**.
+- Símbolo: marco de foto coral con destello blanco y barrido aqua, que comunica limpieza, movimiento y recuperación de espacio.
+- Paleta: azul petróleo `#0A4269`, coral `#FF6F61`, aqua pálido y blanco.
+- El logo maestro está en `app/src/main/res/drawable-nodpi/logo_clean_photos.png` y se usa en el ícono adaptativo y el splash de Android.
+
 ## Comportamiento
 
 - Consulta todas las imágenes indexadas por `MediaStore.Images` en el volumen externo.
@@ -25,4 +32,3 @@ Para ejecutar pruebas Compose en un dispositivo autorizado:
 ```
 
 El APK queda en `app/build/outputs/apk/debug/app-debug.apk`.
-
