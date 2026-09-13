@@ -8,6 +8,8 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.hasScrollAction
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kelvincalcano.cleanphotos.domain.Photo
 import com.kelvincalcano.cleanphotos.domain.ReviewSession
@@ -144,6 +146,28 @@ class ReviewScreenTest {
         }
 
         assert(composeRule.onAllNodesWithText("Recuperar foto").fetchSemanticsNodes().isEmpty())
+    }
+
+    @Test
+    fun portraitReview_allowsVerticalScrollingForBottomFeedback() {
+        val session = ReviewSession(batchSize = 1).apply {
+            load(listOf(Photo(1L, "content://test/1", "camera.jpg", 12_000L)))
+        }
+
+        composeRule.setContent {
+            ReviewScreen(
+                state = session.snapshot(),
+                onKeep = {},
+                onTrash = {},
+                onLoadMore = {},
+                onUndo = {},
+                feedback = "Foto recuperada",
+            )
+        }
+
+        composeRule
+            .onNodeWithContentDescription("Contenido desplazable de revisión")
+            .assert(hasScrollAction())
     }
 
     @Test
