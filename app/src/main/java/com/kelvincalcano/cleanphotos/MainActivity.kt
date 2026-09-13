@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.ActivityInfo
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -100,8 +101,23 @@ class MainActivity : ComponentActivity() {
             keptPreferences.edit().putStringSet(KEPT_PHOTOS_KEY, keptUris).apply()
         }
         refreshAccessState()
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         if (hasFullAccess) loadAlbums()
         setContent {
+            LaunchedEffect(
+                selectedAlbum?.id,
+                reviewSnapshot.current?.id,
+                isLoading,
+                hasFullAccess,
+            ) {
+                requestedOrientation = if (
+                    hasFullAccess && selectedAlbum != null && !isLoading && reviewSnapshot.current != null
+                ) {
+                    ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+                } else {
+                    ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                }
+            }
             MaterialTheme {
                 when {
                     !hasFullAccess -> PermissionScreen(

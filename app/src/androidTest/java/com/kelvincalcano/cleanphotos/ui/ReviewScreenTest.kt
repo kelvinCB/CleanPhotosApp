@@ -1,6 +1,9 @@
 package com.kelvincalcano.cleanphotos.ui
 
+import android.content.res.Configuration
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -141,6 +144,33 @@ class ReviewScreenTest {
         }
 
         assert(composeRule.onAllNodesWithText("Recuperar foto").fetchSemanticsNodes().isEmpty())
+    }
+
+    @Test
+    fun landscapeReview_usesAHorizontalLayout() {
+        val session = ReviewSession(batchSize = 1).apply {
+            load(listOf(Photo(1L, "content://test/1", "camera.jpg", 12_000L)))
+        }
+        val landscapeConfiguration = Configuration().apply {
+            orientation = Configuration.ORIENTATION_LANDSCAPE
+        }
+
+        composeRule.setContent {
+            CompositionLocalProvider(LocalConfiguration provides landscapeConfiguration) {
+                ReviewScreen(
+                    state = session.snapshot(),
+                    onKeep = {},
+                    onTrash = {},
+                    onLoadMore = {},
+                )
+            }
+        }
+
+        composeRule
+            .onNodeWithContentDescription("Revisión en horizontal")
+            .fetchSemanticsNode()
+        composeRule.onNodeWithText("Conservar").fetchSemanticsNode()
+        composeRule.onNodeWithText("Papelera").fetchSemanticsNode()
     }
 
     @Test

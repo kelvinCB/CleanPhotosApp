@@ -50,6 +50,7 @@ fun PhotoCard(
     onSwipeLeft: () -> Unit,
     onSwipeRight: () -> Unit,
     isPending: Boolean,
+    thumbnailHeight: Dp = 420.dp,
     modifier: Modifier = Modifier,
 ) {
     val offsetX = remember(photo.id) { Animatable(0f) }
@@ -113,7 +114,7 @@ fun PhotoCard(
                 .clip(RoundedCornerShape(28.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant),
         ) {
-            PhotoThumbnail(photo, resolver)
+            PhotoThumbnail(photo, resolver, thumbnailHeight = thumbnailHeight)
             if (label != null) {
                 Text(
                     text = label,

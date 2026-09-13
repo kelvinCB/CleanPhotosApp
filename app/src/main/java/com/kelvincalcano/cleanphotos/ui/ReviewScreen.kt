@@ -1,5 +1,6 @@
 package com.kelvincalcano.cleanphotos.ui
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -49,6 +51,7 @@ fun ReviewScreen(
     onReactivatePhotos: () -> Unit = {},
 ) {
     val resolver = LocalContext.current.contentResolver
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -60,59 +63,72 @@ fun ReviewScreen(
 
         when {
             state.current != null -> {
-                if (albumName != null) {
+                if (isLandscape) {
+                    LandscapeReviewContent(
+                        state = state,
+                        resolver = resolver,
+                        onKeep = onKeep,
+                        onTrash = onTrash,
+                        onUndo = onUndo,
+                        actionsEnabled = actionsEnabled,
+                        albumName = albumName,
+                        onChangeAlbum = onChangeAlbum,
+                    )
+                } else {
+                    if (albumName != null) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = "Álbum: $albumName",
+                                modifier = Modifier.weight(1f),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            TextButton(onClick = onChangeAlbum) { Text("Cambiar") }
+                        }
+                    }
+                    Text(
+                        text = "Foto ${state.reviewedCount + 1} de ${state.batchTotal}",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    PhotoStack(
+                        state = state,
+                        resolver = resolver,
+                        onKeep = onKeep,
+                        onTrash = onTrash,
+                        actionsEnabled = actionsEnabled,
+                    )
+                    Spacer(Modifier.height(14.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Text(
-                            text = "Álbum: $albumName",
+                        OutlinedButton(
+                            onClick = onKeep,
+                            enabled = actionsEnabled && !state.pendingTrash,
                             modifier = Modifier.weight(1f),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        TextButton(onClick = onChangeAlbum) { Text("Cambiar") }
+                        ) { Text("Conservar") }
+                        Button(
+                            onClick = onTrash,
+                            enabled = actionsEnabled && !state.pendingTrash,
+                            modifier = Modifier.weight(1f),
+                        ) { Text("Papelera") }
                     }
-                }
-                Text(
-                    text = "Foto ${state.reviewedCount + 1} de ${state.batchTotal}",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(12.dp))
-                PhotoStack(
-                    state = state,
-                    resolver = resolver,
-                    onKeep = onKeep,
-                    onTrash = onTrash,
-                    actionsEnabled = actionsEnabled,
-                )
-                Spacer(Modifier.height(14.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    OutlinedButton(
-                        onClick = onKeep,
-                        enabled = actionsEnabled && !state.pendingTrash,
-                        modifier = Modifier.weight(1f),
-                    ) { Text("Conservar") }
-                    Button(
-                        onClick = onTrash,
-                        enabled = actionsEnabled && !state.pendingTrash,
-                        modifier = Modifier.weight(1f),
-                    ) { Text("Papelera") }
-                }
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "Desliza izquierda para conservar · derecha para papelera",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (state.canUndo) {
-                    TextButton(
-                        onClick = onUndo,
-                        enabled = actionsEnabled && !state.pendingTrash,
-                    ) { Text("Recuperar foto") }
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Desliza izquierda para conservar · derecha para papelera",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (state.canUndo) {
+                        TextButton(
+                            onClick = onUndo,
+                            enabled = actionsEnabled && !state.pendingTrash,
+                        ) { Text("Recuperar foto") }
+                    }
                 }
             }
 
@@ -157,6 +173,90 @@ fun ReviewScreen(
                 }
             },
         )
+    }
+}
+
+@Composable
+private fun LandscapeReviewContent(
+    state: ReviewSessionSnapshot,
+    resolver: android.content.ContentResolver,
+    onKeep: () -> Unit,
+    onTrash: () -> Unit,
+    onUndo: () -> Unit,
+    actionsEnabled: Boolean,
+    albumName: String?,
+    onChangeAlbum: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics { contentDescription = "Revisión en horizontal" },
+        horizontalArrangement = Arrangement.spacedBy(24.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(
+            modifier = Modifier.weight(1.55f),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            if (albumName != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "Álbum: $albumName",
+                        modifier = Modifier.weight(1f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    TextButton(onClick = onChangeAlbum) { Text("Cambiar") }
+                }
+            }
+            Text(
+                text = "Foto ${state.reviewedCount + 1} de ${state.batchTotal}",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            PhotoStack(
+                state = state,
+                resolver = resolver,
+                onKeep = onKeep,
+                onTrash = onTrash,
+                actionsEnabled = actionsEnabled,
+                thumbnailHeight = 360.dp,
+            )
+        }
+        Column(
+            modifier = Modifier.weight(0.7f),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text("Acciones", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = onKeep,
+                enabled = actionsEnabled && !state.pendingTrash,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Conservar") }
+            Spacer(Modifier.height(10.dp))
+            Button(
+                onClick = onTrash,
+                enabled = actionsEnabled && !state.pendingTrash,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Papelera") }
+            Spacer(Modifier.height(12.dp))
+            Text(
+                "Desliza izquierda para conservar · derecha para papelera",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (state.canUndo) {
+                TextButton(
+                    onClick = onUndo,
+                    enabled = actionsEnabled && !state.pendingTrash,
+                ) { Text("Recuperar foto") }
+            }
+        }
     }
 }
 
@@ -213,6 +313,7 @@ private fun PhotoStack(
     onKeep: () -> Unit,
     onTrash: () -> Unit,
     actionsEnabled: Boolean,
+    thumbnailHeight: androidx.compose.ui.unit.Dp = 420.dp,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         if (state.previousPhotos.isNotEmpty()) {
@@ -258,6 +359,7 @@ private fun PhotoStack(
                 onSwipeLeft = onKeep,
                 onSwipeRight = onTrash,
                 isPending = state.pendingTrash || !actionsEnabled,
+                thumbnailHeight = thumbnailHeight,
                 modifier = Modifier.fillMaxWidth(),
             )
         }

@@ -15,6 +15,7 @@ Crear una aplicación Android ligera para revisar todas las imágenes indexadas 
 - Si el álbum contiene imágenes, pero todas fueron conservadas o enviadas a papelera en sesiones anteriores, mostrar “Álbum completado” con el nombre y la cantidad, en lugar del estado genérico sin fotos.
 - Mostrar la selección de álbumes en dos columnas, dejando “Todas las fotos” como la primera opción.
 - Ofrecer un selector para ordenar los álbumes por tamaño, nombre o fecha de la foto más reciente, en orden ascendente y descendente, manteniendo “Todas las fotos” como primera opción.
+- Mantener permisos, selección de álbumes, carga y resúmenes en portrait; permitir portrait y landscape durante la revisión, con un diseño horizontal de foto y acciones lado a lado.
 - En el estado de álbum completado, ofrecer “Volver a activar fotos para clasificarlas” para quitar las marcas de conservadas de ese álbum y abrirlo desde la primera imagen.
 - Tras conservar una foto, mostrar hasta tres miniaturas de fotos conservadas anteriores en una franja separada, encima de la tarjeta actual y sin cubrirla.
 - “Recuperar foto” solo debe deshacer la última decisión de conservar y quitar esa foto del registro persistente de conservadas. Las fotos enviadas a papelera no ofrecen deshacer desde la pantalla de revisión.
