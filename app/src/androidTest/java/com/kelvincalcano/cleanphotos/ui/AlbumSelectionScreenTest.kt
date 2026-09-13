@@ -79,4 +79,41 @@ class AlbumSelectionScreenTest {
             .onNodeWithContentDescription("Orden actual: Tamaño: mayor a menor")
             .assertIsDisplayed()
     }
+
+    @Test
+    fun photoSortMenu_exposesDateAndSizeOrders() {
+        val selectedOrder = androidx.compose.runtime.mutableStateOf(
+            com.kelvincalcano.cleanphotos.domain.PhotoSortOrder.DATE_ASC,
+        )
+
+        composeRule.setContent {
+            AlbumSelectionScreen(
+                albums = listOf(
+                    PhotoAlbum.allPhotos(photoCount = 3, totalBytes = 3_000L),
+                ),
+                onAlbumSelected = {},
+                photoSortOrder = selectedOrder.value,
+                onPhotoSortOrderChanged = { selectedOrder.value = it },
+            )
+        }
+
+        composeRule
+            .onNodeWithContentDescription("Orden actual de fotos: Fecha: más antigua primero")
+            .performClick()
+
+        assertTrue(
+            composeRule.onAllNodesWithText("Fecha: más antigua primero")
+                .fetchSemanticsNodes()
+                .size >= 2,
+        )
+        composeRule.onNodeWithText("Fecha: más reciente primero").assertIsDisplayed()
+        composeRule.onNodeWithText("Tamaño: mayor a menor").assertIsDisplayed()
+        composeRule.onNodeWithText("Tamaño: menor a mayor").assertIsDisplayed()
+
+        composeRule.onNodeWithText("Tamaño: mayor a menor").performClick()
+        assertEquals(
+            com.kelvincalcano.cleanphotos.domain.PhotoSortOrder.SIZE_DESC,
+            selectedOrder.value,
+        )
+    }
 }

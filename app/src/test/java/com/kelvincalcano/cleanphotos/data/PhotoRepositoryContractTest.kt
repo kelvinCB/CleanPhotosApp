@@ -18,11 +18,13 @@ class PhotoRepositoryContractTest {
             displayName = "Screenshot.png",
             sizeBytes = 8_192L,
             uri = "content://media/external/images/media/42",
+            dateAddedSeconds = 123L,
         )
 
         assertEquals(42L, photo?.id)
         assertEquals("Screenshot.png", photo?.displayName)
         assertEquals(8_192L, photo?.sizeBytes)
+        assertEquals(123L, photo?.dateAddedSeconds)
         assertEquals("content://media/external/images/media/42", photo?.uri)
     }
 

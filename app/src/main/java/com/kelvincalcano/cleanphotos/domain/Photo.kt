@@ -5,6 +5,7 @@ data class Photo(
     val uri: String,
     val displayName: String,
     val sizeBytes: Long,
+    val dateAddedSeconds: Long = 0L,
 )
 
 fun formatBytes(bytes: Long): String {
@@ -18,4 +19,3 @@ fun formatBytes(bytes: Long): String {
     }
     return "%.1f %s".format(java.util.Locale.US, value, units[unitIndex])
 }
-

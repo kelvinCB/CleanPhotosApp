@@ -22,11 +22,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import com.kelvincalcano.cleanphotos.domain.PhotoAlbum
+import com.kelvincalcano.cleanphotos.domain.PhotoSortOrder
 import com.kelvincalcano.cleanphotos.domain.BatchWritePromptController
 import com.kelvincalcano.cleanphotos.data.PhotoRepository
 import com.kelvincalcano.cleanphotos.domain.BatchWriteAccessRegistry
 import com.kelvincalcano.cleanphotos.domain.KeptPhotoStore
 import com.kelvincalcano.cleanphotos.domain.ReviewStateHolder
+import com.kelvincalcano.cleanphotos.domain.sortPhotos
 import com.kelvincalcano.cleanphotos.ui.LoadingState
 import com.kelvincalcano.cleanphotos.ui.AlbumSelectionScreen
 import com.kelvincalcano.cleanphotos.ui.PermissionScreen
@@ -42,6 +44,7 @@ class MainActivity : ComponentActivity() {
     private var reviewSnapshot by mutableStateOf(reviewState.state)
     private var albums by mutableStateOf<List<PhotoAlbum>>(emptyList())
     private var selectedAlbum by mutableStateOf<PhotoAlbum?>(null)
+    private var photoSortOrder by mutableStateOf(PhotoSortOrder.DATE_ASC)
     private var hasFullAccess by mutableStateOf(false)
     private var hasPartialAccess by mutableStateOf(false)
     private var isLoadingAlbums by mutableStateOf(false)
@@ -129,6 +132,8 @@ class MainActivity : ComponentActivity() {
                     selectedAlbum == null -> AlbumSelectionScreen(
                         albums = albums,
                         onAlbumSelected = ::selectAlbum,
+                        photoSortOrder = photoSortOrder,
+                        onPhotoSortOrderChanged = { photoSortOrder = it },
                     )
                     isLoading -> LoadingState()
                     else -> ReviewScreen(
@@ -202,7 +207,8 @@ class MainActivity : ComponentActivity() {
     private fun loadPhotos(album: PhotoAlbum) {
         isLoading = true
         lifecycleScope.launch {
-            reviewState.load(keptPhotoStore.filterUnreviewed(repository.loadPhotos(album)))
+            val photos = keptPhotoStore.filterUnreviewed(repository.loadPhotos(album))
+            reviewState.load(sortPhotos(photos, photoSortOrder))
             reviewSnapshot = reviewState.state
             isLoading = false
             feedback = null
@@ -220,7 +226,7 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             val photos = repository.loadPhotos(album)
             keptPhotoStore.unmarkKept(photos)
-            reviewState.load(photos)
+            reviewState.load(sortPhotos(photos, photoSortOrder))
             reviewSnapshot = reviewState.state
             isLoading = false
             feedback = "Fotos reactivadas para clasificar"

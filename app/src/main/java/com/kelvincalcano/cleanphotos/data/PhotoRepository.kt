@@ -97,6 +97,7 @@ class PhotoRepository(private val resolver: ContentResolver) {
             val idIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
             val nameIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
             val sizeIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.SIZE)
+            val dateAddedIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED)
             buildList {
                 while (cursor.moveToNext()) {
                     val id = cursor.getLong(idIndex)
@@ -109,6 +110,7 @@ class PhotoRepository(private val resolver: ContentResolver) {
                             id = id,
                             displayName = cursor.getString(nameIndex),
                             sizeBytes = cursor.getLong(sizeIndex),
+                            dateAddedSeconds = cursor.getLong(dateAddedIndex),
                             uri = uri,
                         ) ?: continue,
                     )
@@ -164,13 +166,20 @@ class PhotoRepository(private val resolver: ContentResolver) {
             latestPhotoDateAdded = latestPhotoDateAdded,
         )
 
-        fun mapRow(id: Long?, displayName: String?, sizeBytes: Long?, uri: String?): Photo? {
+        fun mapRow(
+            id: Long?,
+            displayName: String?,
+            sizeBytes: Long?,
+            uri: String?,
+            dateAddedSeconds: Long = 0L,
+        ): Photo? {
             if (id == null || uri.isNullOrBlank()) return null
             return Photo(
                 id = id,
                 uri = uri,
                 displayName = displayName.orEmpty(),
                 sizeBytes = sizeBytes ?: 0L,
+                dateAddedSeconds = dateAddedSeconds,
             )
         }
     }

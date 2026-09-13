@@ -44,6 +44,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.kelvincalcano.cleanphotos.domain.AlbumSortOrder
 import com.kelvincalcano.cleanphotos.domain.PhotoAlbum
+import com.kelvincalcano.cleanphotos.domain.PhotoSortOrder
 import com.kelvincalcano.cleanphotos.domain.formatBytes
 import com.kelvincalcano.cleanphotos.domain.sortAlbums
 import kotlinx.coroutines.Dispatchers
@@ -53,10 +54,13 @@ import kotlinx.coroutines.withContext
 fun AlbumSelectionScreen(
     albums: List<PhotoAlbum>,
     onAlbumSelected: (PhotoAlbum) -> Unit,
+    photoSortOrder: PhotoSortOrder = PhotoSortOrder.DATE_ASC,
+    onPhotoSortOrderChanged: (PhotoSortOrder) -> Unit = {},
 ) {
     val resolver = LocalContext.current.contentResolver
     var sortOrderName by rememberSaveable { mutableStateOf(AlbumSortOrder.NAME_ASC.name) }
     var isSortMenuExpanded by remember { mutableStateOf(false) }
+    var isPhotoSortMenuExpanded by remember { mutableStateOf(false) }
     val sortOrder = AlbumSortOrder.valueOf(sortOrderName)
     val sortedAlbums = remember(albums, sortOrder) { sortAlbums(albums, sortOrder) }
     Column(
@@ -96,6 +100,39 @@ fun AlbumSelectionScreen(
                                 onClick = {
                                     sortOrderName = option.name
                                     isSortMenuExpanded = false
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Ordenar fotos", style = MaterialTheme.typography.titleSmall)
+                Spacer(Modifier.weight(1f))
+                Box {
+                    OutlinedButton(
+                        onClick = { isPhotoSortMenuExpanded = true },
+                        modifier = Modifier.semantics {
+                            contentDescription = "Orden actual de fotos: ${photoSortOrder.label}"
+                        },
+                    ) {
+                        Text(photoSortOrder.label)
+                    }
+                    DropdownMenu(
+                        expanded = isPhotoSortMenuExpanded,
+                        onDismissRequest = { isPhotoSortMenuExpanded = false },
+                    ) {
+                        PhotoSortOrder.entries.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(option.label) },
+                                onClick = {
+                                    onPhotoSortOrderChanged(option)
+                                    isPhotoSortMenuExpanded = false
                                 },
                             )
                         }
